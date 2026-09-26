@@ -5,6 +5,11 @@ import type {
   SignupCredentials,
   User,
 } from '../types/auth.types';
+import type {
+  DocumentListResponse,
+  DocumentUploadResponse,
+  StudyDocument,
+} from '../types/document.types';
 import { tokenStorage } from './tokenStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -67,6 +72,87 @@ class ApiClient {
     me: async (): Promise<{ user: User }> => {
       return this.request<{ user: User }>('/auth/me', {
         method: 'GET',
+      });
+    },
+  };
+
+  public readonly documents = {
+    list: async (): Promise<DocumentListResponse> => {
+      return this.request<DocumentListResponse>('/documents', {
+        method: 'GET',
+      });
+    },
+
+    getById: async (id: string): Promise<{ document: StudyDocument }> => {
+      return this.request<{ document: StudyDocument }>(`/documents/${id}`, {
+        method: 'GET',
+      });
+    },
+
+    upload: async (
+      file: File,
+      title?: string,
+      subject?: string,
+      onProgress?: (percent: number) => void
+    ): Promise<DocumentUploadResponse> => {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+
+        formData.append('file', file);
+        if (title) formData.append('title', title);
+        if (subject) formData.append('subject', subject);
+
+        xhr.open('POST', `${API_BASE_URL}/documents/upload`);
+
+        const token = tokenStorage.getToken();
+        if (token) {
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+
+        if (xhr.upload && onProgress) {
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              onProgress(percent);
+            }
+          };
+        }
+
+        xhr.onload = () => {
+          let data: unknown;
+          try {
+            data = JSON.parse(xhr.responseText);
+          } catch {
+            data = null;
+          }
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(data as DocumentUploadResponse);
+          } else {
+            const errorData = data as ApiErrorResponse | null;
+            const message =
+              errorData?.error?.message ||
+              `Upload failed with status ${xhr.status} (${xhr.statusText})`;
+            const code = errorData?.error?.code || 'UPLOAD_FAILED';
+            const error = new Error(message) as Error & { code: string; status: number };
+            error.code = code;
+            error.status = xhr.status;
+            reject(error);
+          }
+        };
+
+        xhr.onerror = () => {
+          const error = new Error('Network error during file upload') as Error & {
+            code: string;
+            status: number;
+          };
+          error.code = 'NETWORK_ERROR';
+          error.status = 0;
+          reject(error);
+        };
+
+        xhr.send(formData);
       });
     },
   };

@@ -6,15 +6,13 @@ AnchorAI is an intelligent study companion platform that transforms your notes, 
 
 ## Tech Stack
 
-### Client
-
+### Client (`/client`)
 - **Framework:** React 19 + TypeScript (strict mode)
 - **Tooling:** Vite, ESLint, Prettier
 - **Styling:** TailwindCSS + Custom Tokens inspired by the Together AI design system (high-contrast surfaces, mono eyebrows, clean typography)
 - **State & Routing:** Context API / React Hooks
 
-### Server
-
+### Server (`/server`)
 - **Runtime & Framework:** Node.js + Express + TypeScript (strict mode)
 - **Database:** MongoDB & Mongoose + MongoDB Atlas Vector Search
 - **AI & Ingestion:** OpenAI / Groq LLMs, OpenAI Embeddings (`text-embedding-3-small`), Tiktoken chunking, Tesseract.js / Vision OCR
@@ -26,16 +24,17 @@ AnchorAI is an intelligent study companion platform that transforms your notes, 
 
 ```text
 AnchorAI/
-├── client/                     # Frontend Vite + React application
+├── client/                     # Independent Frontend Vite + React application
 │   ├── src/
 │   │   ├── components/         # Reusable UI components & design system primitives
 │   │   ├── pages/              # Top-level screen views (Auth, Upload, Chat, Quiz, Analytics)
 │   │   ├── hooks/              # Custom React hooks (useAuth, etc.)
 │   │   ├── lib/                # API clients, token helpers, utilities
 │   │   └── types/              # Client-side TypeScript definitions
+│   ├── eslint.config.js        # Client ESLint configuration
 │   ├── .env.example
-│   └── package.json
-├── server/                     # Backend Node.js + Express API
+│   └── package.json            # Client-only dependencies
+├── server/                     # Independent Backend Node.js + Express API
 │   ├── src/
 │   │   ├── routes/             # Express route definitions
 │   │   ├── controllers/        # Request handling and HTTP orchestration
@@ -44,62 +43,37 @@ AnchorAI/
 │   │   ├── middleware/         # Auth, validation, and error middlewares
 │   │   ├── config/             # Typed environment & service configuration
 │   │   └── utils/              # Helper utilities
+│   ├── eslint.config.mjs       # Server ESLint configuration
 │   ├── .env.example
-│   └── package.json
+│   └── package.json            # Server-only dependencies
 ├── docs/                       # Project blueprints and design system specifications
 ├── tracker.md                  # Milestone & decision tracking log
-├── eslint.config.js            # Shared ESLint configuration
-├── .prettierrc                 # Shared Prettier formatting rules
-└── package.json                # Root orchestration & scripts
+├── .prettierrc                 # Shared workspace Prettier configuration
+└── .prettierignore
 ```
 
 ---
 
 ## Getting Started
 
-### Prerequisites
+`/client` and `/server` are completely independent Node projects with their own `package.json` and `node_modules`.
 
-- **Node.js:** v18+ (tested on Node v24)
-- **npm:** v9+
+### 1. Client Setup
+```bash
+cd client
+npm install
+npm run dev      # Runs Vite dev server at http://localhost:5173
+npm run build    # Type-check and bundle production assets
+npm run lint     # Lint client TypeScript code
+```
 
-### Setup Instructions
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone <repo-url>
-   cd AnchorAI
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   # Install root orchestration tools
-   npm install
-
-   # Install client dependencies
-   npm --prefix client install
-
-   # Install server dependencies
-   npm --prefix server install
-   ```
-
-3. **Configure Environment Variables:**
-   - Copy `server/.env.example` to `server/.env` and provide your secrets (MongoDB URI, JWT secret, Cloudinary, API keys).
-   - Copy `client/.env.example` to `client/.env` and verify API endpoints.
-
-4. **Run Development Servers:**
-   - **Both Client & Server:**
-     ```bash
-     npm run dev:server
-     npm run dev:client
-     ```
-   - Client dev runs on `http://localhost:5173`
-   - Server dev runs on `http://localhost:5000`
-
-5. **Linting and Formatting:**
-   ```bash
-   npm run lint          # Run ESLint across all packages
-   npm run format        # Auto-format all code with Prettier
-   npm run format:check  # Check formatting compliance
-   ```
+### 2. Server Setup
+```bash
+cd server
+npm install
+# Configure your environment variables
+cp .env.example .env
+npm run dev      # Runs nodemon + ts-node at http://localhost:5000
+npm run build    # Type-checks and compiles to /dist
+npm run lint     # Lint server TypeScript code
+```

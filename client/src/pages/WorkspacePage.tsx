@@ -1,23 +1,54 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { DocumentList } from '../components/DocumentList';
+import { DocumentUploadZone } from '../components/DocumentUploadZone';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../lib/api';
+import type { StudyDocument } from '../types/document.types';
 
 export const WorkspacePage: React.FC = () => {
   const { user, logout } = useAuth();
+  const [documents, setDocuments] = useState<StudyDocument[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setErrorMsg(null);
+      const res = await api.documents.list();
+      setDocuments(res.documents);
+    } catch (err) {
+      setErrorMsg((err as Error).message || 'Failed to load documents');
+    } finally {
+      setIsLoadingDocs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  const handleUploadSuccess = (newDoc: StudyDocument) => {
+    setDocuments((prev) => [newDoc, ...prev]);
+  };
+
+  const readyCount = documents.filter((d) => d.status === 'ready').length;
+  const processingCount = documents.filter((d) => d.status === 'processing').length;
+  const failedCount = documents.filter((d) => d.status === 'failed').length;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      {/* Top Banner with Brand Contrast */}
+      {/* Top Banner */}
       <div className="mb-8 rounded-[4px] border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
               <span className="font-mono text-xs uppercase tracking-wider text-neutral-500">
-                Session Active
+                Session Active · Workspace
               </span>
             </div>
             <h1 className="mt-1 text-2xl font-medium tracking-tight text-neutral-950">
-              Welcome back, {user?.name}
+              Welcome, {user?.name}
             </h1>
             <p className="mt-0.5 text-sm text-neutral-500">
               Account: <span className="font-mono text-neutral-700">{user?.email}</span>
@@ -31,51 +62,52 @@ export const WorkspacePage: React.FC = () => {
             Sign Out
           </button>
         </div>
+
+        {/* Stats Row */}
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-4 sm:grid-cols-4">
+          <div className="rounded-[3px] bg-neutral-50 p-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
+              Total Ingested
+            </span>
+            <div className="mt-1 font-mono text-xl font-semibold text-neutral-900">
+              {documents.length}
+            </div>
+          </div>
+          <div className="rounded-[3px] bg-neutral-50 p-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-600">
+              Ready for RAG
+            </span>
+            <div className="mt-1 font-mono text-xl font-semibold text-emerald-700">
+              {readyCount}
+            </div>
+          </div>
+          <div className="rounded-[3px] bg-neutral-50 p-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-amber-600">
+              Processing
+            </span>
+            <div className="mt-1 font-mono text-xl font-semibold text-amber-700">
+              {processingCount}
+            </div>
+          </div>
+          <div className="rounded-[3px] bg-neutral-50 p-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-red-600">
+              Failed
+            </span>
+            <div className="mt-1 font-mono text-xl font-semibold text-red-700">{failedCount}</div>
+          </div>
+        </div>
       </div>
 
-      {/* Auth Verification Card */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-[4px] border border-neutral-200 bg-white p-6">
-          <span className="font-mono text-[11px] font-medium uppercase tracking-widest text-neutral-500">
-            Auth State Verification
-          </span>
-          <h2 className="mt-2 text-lg font-medium text-neutral-900">JWT Session Details</h2>
-          <div className="mt-4 space-y-2.5 font-mono text-xs">
-            <div className="flex justify-between border-b border-neutral-100 pb-2">
-              <span className="text-neutral-500">USER ID</span>
-              <span className="text-neutral-800">{user?.id}</span>
-            </div>
-            <div className="flex justify-between border-b border-neutral-100 pb-2">
-              <span className="text-neutral-500">EMAIL</span>
-              <span className="text-neutral-800">{user?.email}</span>
-            </div>
-            <div className="flex justify-between border-b border-neutral-100 pb-2">
-              <span className="text-neutral-500">TOKEN STORAGE</span>
-              <span className="text-neutral-800">In-Memory + Session Fallback</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">AUTH STATUS</span>
-              <span className="font-medium text-emerald-600">VERIFIED / ATTACHED</span>
-            </div>
-          </div>
+      {errorMsg && (
+        <div className="mb-6 rounded-[4px] border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+          {errorMsg}
         </div>
+      )}
 
-        {/* Milestone Card */}
-        <div className="rounded-[4px] border border-neutral-200 bg-[#010120] p-6 text-white">
-          <span className="font-mono text-[11px] font-medium uppercase tracking-widest text-neutral-400">
-            Phase 1a Complete
-          </span>
-          <h2 className="mt-2 text-lg font-medium text-white">Core Authentication Ready</h2>
-          <p className="mt-2 text-sm text-neutral-300">
-            Authentication with bcrypt (cost 12), JWT issuance, protected routing, and Zod schema
-            validation is fully operational.
-          </p>
-          <div className="mt-6 flex items-center gap-2">
-            <span className="inline-flex items-center rounded-[3px] bg-neutral-800 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-neutral-300">
-              Next Step: Phase 1b (Document Upload)
-            </span>
-          </div>
-        </div>
+      {/* Main Grid: Upload Zone + Document List */}
+      <div className="space-y-8">
+        <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
+        <DocumentList documents={documents} isLoading={isLoadingDocs} onRefresh={fetchDocuments} />
       </div>
     </div>
   );
