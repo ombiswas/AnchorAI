@@ -17,9 +17,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "js-tiktoken": "^1.0.21",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.10.2",
     "multer": "^2.4.0",
+    "openai": "^7.23.0",
     "pdf-parse": "^2.4.5",
     "zod": "^4.6.5"
   },

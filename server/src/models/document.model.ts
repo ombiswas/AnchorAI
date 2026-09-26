@@ -10,6 +10,7 @@ export interface IDocument extends Document {
   fileUrl: string;
   status: DocumentStatus;
   chunkCount: number;
+  totalTokensUsed?: number;
   extractedText?: string;
   errorReason?: string;
   createdAt: Date;
@@ -52,6 +53,10 @@ const documentSchema = new Schema<IDocument>(
       index: true,
     },
     chunkCount: {
+      type: Number,
+      default: 0,
+    },
+    totalTokensUsed: {
       type: Number,
       default: 0,
     },
