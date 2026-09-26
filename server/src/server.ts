@@ -1,22 +1,36 @@
 import cors from 'cors';
-import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
-
-dotenv.config();
+import { connectDB } from './config/db';
+import { config } from './config/index';
+import { errorHandler } from './middleware/error.middleware';
+import authRoutes from './routes/auth.routes';
 
 const app = express();
-const port = process.env.PORT || 5000;
 
-app.use(cors());
+// Initialize Database
+connectDB();
+
+// Middleware
+app.use(
+  cors({
+    origin: config.clientUrl,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-// Scaffolding healthcheck route (no business logic)
+// Routes
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', service: 'AnchorAI Server' });
 });
 
-app.listen(port, () => {
-  console.log(`[server] AnchorAI server running on port ${port}`);
+app.use('/api/auth', authRoutes);
+
+// Centralized Error Handling Middleware
+app.use(errorHandler);
+
+app.listen(config.port, () => {
+  console.log(`[server] AnchorAI server running on port ${config.port} (${config.nodeEnv})`);
 });
 
 export default app;
