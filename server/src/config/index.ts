@@ -10,6 +10,9 @@ export interface AppConfig {
   jwtSecret: string;
   jwtExpiresIn: string;
   bcryptSaltRounds: number;
+  llmProvider: 'openai' | 'groq';
+  openaiApiKey: string;
+  groqApiKey: string;
 }
 
 export const config: AppConfig = {
@@ -20,4 +23,7 @@ export const config: AppConfig = {
   jwtSecret: process.env.JWT_SECRET || 'dev_anchorai_jwt_secret_change_in_production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   bcryptSaltRounds: 12, // Strict cost factor 12 as required
+  llmProvider: process.env.LLM_PROVIDER?.toLowerCase() === 'groq' ? 'groq' : 'openai',
+  openaiApiKey: process.env.OPENAI_API_KEY || '',
+  groqApiKey: process.env.GROQ_API_KEY || '',
 };

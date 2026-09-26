@@ -156,6 +156,18 @@ class ApiClient {
       });
     },
   };
+
+  public readonly chat = {
+    ask: async (
+      documentId: string,
+      question: string
+    ): Promise<import('../types/chat.types').ChatResponse> => {
+      return this.request<import('../types/chat.types').ChatResponse>(`/chat/${documentId}`, {
+        method: 'POST',
+        body: JSON.stringify({ question }),
+      });
+    },
+  };
 }
 
 export const api = new ApiClient();

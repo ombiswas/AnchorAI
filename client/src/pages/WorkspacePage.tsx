@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { DocumentChat } from '../components/DocumentChat';
 import { DocumentList } from '../components/DocumentList';
 import { DocumentUploadZone } from '../components/DocumentUploadZone';
 import { useAuth } from '../hooks/useAuth';
@@ -10,6 +11,7 @@ export const WorkspacePage: React.FC = () => {
   const [documents, setDocuments] = useState<StudyDocument[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [activeChatDoc, setActiveChatDoc] = useState<StudyDocument | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -104,11 +106,20 @@ export const WorkspacePage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Grid: Upload Zone + Document List */}
-      <div className="space-y-8">
-        <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
-        <DocumentList documents={documents} isLoading={isLoadingDocs} onRefresh={fetchDocuments} />
-      </div>
+      {/* Main View: Document Chat OR Upload + Library */}
+      {activeChatDoc ? (
+        <DocumentChat document={activeChatDoc} onBackToLibrary={() => setActiveChatDoc(null)} />
+      ) : (
+        <div className="space-y-8">
+          <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
+          <DocumentList
+            documents={documents}
+            isLoading={isLoadingDocs}
+            onRefresh={fetchDocuments}
+            onSelectChatDocument={setActiveChatDoc}
+          />
+        </div>
+      )}
     </div>
   );
 };

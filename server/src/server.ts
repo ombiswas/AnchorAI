@@ -5,6 +5,7 @@ import { connectDB } from './config/db';
 import { config } from './config/index';
 import { errorHandler } from './middleware/error.middleware';
 import authRoutes from './routes/auth.routes';
+import chatRoutes from './routes/chat.routes';
 import documentRoutes from './routes/document.routes';
 
 const app = express();
@@ -31,6 +32,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Centralized Error Handling Middleware
 app.use(errorHandler);

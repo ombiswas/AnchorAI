@@ -5,9 +5,15 @@ interface DocumentListProps {
   documents: StudyDocument[];
   isLoading: boolean;
   onRefresh: () => void;
+  onSelectChatDocument?: (doc: StudyDocument) => void;
 }
 
-export const DocumentList: React.FC<DocumentListProps> = ({ documents, isLoading, onRefresh }) => {
+export const DocumentList: React.FC<DocumentListProps> = ({
+  documents,
+  isLoading,
+  onRefresh,
+  onSelectChatDocument,
+}) => {
   const [selectedDocForError, setSelectedDocForError] = useState<StudyDocument | null>(null);
 
   // Auto-poll if any document is currently in 'processing' status
@@ -132,22 +138,33 @@ export const DocumentList: React.FC<DocumentListProps> = ({ documents, isLoading
                 )}
 
                 {doc.status === 'ready' && (
-                  <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-emerald-800">
-                    <svg
-                      className="h-3 w-3 text-emerald-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2.5}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Ready for RAG
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-emerald-800">
+                      <svg
+                        className="h-3 w-3 text-emerald-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      Ready for RAG
+                    </span>
+                    {onSelectChatDocument && (
+                      <button
+                        onClick={() => onSelectChatDocument(doc)}
+                        className="inline-flex items-center gap-1 rounded-[4px] bg-black px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-white transition hover:bg-neutral-800"
+                      >
+                        <span>Chat</span>
+                        <span>&rarr;</span>
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {doc.status === 'failed' && (
