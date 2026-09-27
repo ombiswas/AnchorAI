@@ -4,6 +4,7 @@ import path from 'path';
 import { connectDB } from './config/db';
 import { config } from './config/index';
 import { errorHandler } from './middleware/error.middleware';
+import analyticsRoutes from './routes/analytics.routes';
 import authRoutes from './routes/auth.routes';
 import chatRoutes from './routes/chat.routes';
 import documentRoutes from './routes/document.routes';
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Centralized Error Handling Middleware
 app.use(errorHandler);

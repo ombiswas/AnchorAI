@@ -8,6 +8,12 @@ const generateQuizInputSchema = z.object({
   questionCount: z.coerce.number().int().min(1).max(15).optional().default(5),
 });
 
+const generateFocusedQuizInputSchema = z.object({
+  documentIds: z.array(z.string().min(1)).optional(),
+  questionCount: z.coerce.number().int().min(1).max(15).optional().default(5),
+  targetTopics: z.array(z.string().min(1)).optional(),
+});
+
 const submitQuizInputSchema = z.object({
   answers: z.array(
     z.object({
@@ -37,6 +43,33 @@ export class QuizController {
 
       res.status(201).json({
         message: 'Quiz generated successfully',
+        quiz,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/quiz/generate-focused
+   * Generates a focused quiz weighted toward the student's weakest topics.
+   */
+  public async generateFocused(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const parsed = generateFocusedQuizInputSchema.parse(req.body);
+      const quiz = await quizService.generateFocusedQuiz(
+        req.userId as string,
+        parsed.documentIds,
+        parsed.questionCount,
+        parsed.targetTopics
+      );
+
+      res.status(201).json({
+        message: 'Focused practice quiz generated successfully',
         quiz,
       });
     } catch (error) {

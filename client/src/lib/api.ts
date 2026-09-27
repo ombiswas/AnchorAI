@@ -179,6 +179,18 @@ class ApiClient {
       });
     },
 
+    generateFocused: async (
+      payload: import('../types/analytics.types').GenerateFocusedQuizRequest
+    ): Promise<import('../types/quiz.types').GenerateQuizResponse> => {
+      return this.request<import('../types/quiz.types').GenerateQuizResponse>(
+        '/quiz/generate-focused',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        }
+      );
+    },
+
     getForTaking: async (
       id: string
     ): Promise<{ quiz: import('../types/quiz.types').QuizForTaking }> => {
@@ -201,6 +213,30 @@ class ApiClient {
       return this.request<import('../types/quiz.types').QuizListResponse>('/quiz', {
         method: 'GET',
       });
+    },
+  };
+
+  public readonly analytics = {
+    getWeakTopics: async (
+      limit = 10
+    ): Promise<{ weakTopics: import('../types/analytics.types').WeakTopic[] }> => {
+      return this.request<{ weakTopics: import('../types/analytics.types').WeakTopic[] }>(
+        `/analytics/weak-topics?limit=${limit}`,
+        {
+          method: 'GET',
+        }
+      );
+    },
+
+    getDashboard: async (): Promise<{
+      dashboard: import('../types/analytics.types').DashboardData;
+    }> => {
+      return this.request<{ dashboard: import('../types/analytics.types').DashboardData }>(
+        '/analytics/dashboard',
+        {
+          method: 'GET',
+        }
+      );
     },
   };
 }

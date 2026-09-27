@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { DashboardView } from '../components/DashboardView';
 import { DocumentChat } from '../components/DocumentChat';
 import { DocumentList } from '../components/DocumentList';
 import { DocumentUploadZone } from '../components/DocumentUploadZone';
@@ -16,6 +17,9 @@ export const WorkspacePage: React.FC = () => {
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeChatDoc, setActiveChatDoc] = useState<StudyDocument | null>(null);
+
+  // Main Tabs: 'library' | 'dashboard'
+  const [activeTab, setActiveTab] = useState<'library' | 'dashboard'>('library');
 
   // Quiz State
   const [isGeneratorOpen, setIsGeneratorOpen] = useState<boolean>(false);
@@ -187,16 +191,54 @@ export const WorkspacePage: React.FC = () => {
       ) : activeChatDoc ? (
         <DocumentChat document={activeChatDoc} onBackToLibrary={() => setActiveChatDoc(null)} />
       ) : (
-        <div className="space-y-8">
-          <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
-          <DocumentList
-            documents={documents}
-            isLoading={isLoadingDocs}
-            onRefresh={fetchDocuments}
-            onSelectChatDocument={setActiveChatDoc}
-            onSelectQuizDocument={(doc) => handleOpenGenerator(doc._id)}
-            onOpenQuizGenerator={() => handleOpenGenerator()}
-          />
+        <div className="space-y-6">
+          {/* Navigation Tabs */}
+          <div className="flex border-b border-neutral-200">
+            <button
+              onClick={() => setActiveTab('library')}
+              className={`flex items-center gap-2 border-b-2 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition ${
+                activeTab === 'library'
+                  ? 'border-[#010120] text-neutral-950 font-bold'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-800'
+              }`}
+            >
+              <span>📚</span>
+              <span>Study Library</span>
+              <span className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600">
+                {documents.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex items-center gap-2 border-b-2 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition ${
+                activeTab === 'dashboard'
+                  ? 'border-[#010120] text-neutral-950 font-bold'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-800'
+              }`}
+            >
+              <span>📊</span>
+              <span>Diagnostics & Mastery</span>
+            </button>
+          </div>
+
+          {activeTab === 'library' ? (
+            <div className="space-y-8">
+              <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
+              <DocumentList
+                documents={documents}
+                isLoading={isLoadingDocs}
+                onRefresh={fetchDocuments}
+                onSelectChatDocument={setActiveChatDoc}
+                onSelectQuizDocument={(doc) => handleOpenGenerator(doc._id)}
+                onOpenQuizGenerator={() => handleOpenGenerator()}
+              />
+            </div>
+          ) : (
+            <DashboardView
+              onStartQuiz={handleQuizReady}
+              onNavigateToLibrary={() => setActiveTab('library')}
+            />
+          )}
         </div>
       )}
 

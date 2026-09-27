@@ -5,6 +5,7 @@ import { DocumentModel } from '../models/document.model';
 import { IQuiz, QuizModel } from '../models/quiz.model';
 import { IQuizAttempt, QuizAttemptModel } from '../models/quizAttempt.model';
 import { NotFoundError, ValidationError } from '../utils/errors';
+import { analyticsService } from './analytics.service';
 import { llmService } from './llm.service';
 
 export const quizQuestionZodSchema = z.object({
@@ -35,7 +36,8 @@ export class QuizService {
   public async generateQuiz(
     userId: string,
     documentIds: string[],
-    questionCount = 5
+    questionCount = 5,
+    focusTopics?: string[]
   ): Promise<IQuiz> {
     if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
       throw new ValidationError('At least one document ID must be provided to generate a quiz');
@@ -97,6 +99,13 @@ export class QuizService {
       )
       .join('\n\n---\n\n');
 
+    const focusInstruction =
+      focusTopics && focusTopics.length > 0
+        ? `\n7. WEAK TOPIC REMEDIATION: The student is specifically struggling with these concepts: [${focusTopics.join(
+            ', '
+          )}]. You MUST weight questions heavily toward these concepts and test deep comprehension of these specific topics.`
+        : '';
+
     const systemPrompt = `You are an expert university professor creating a rigorous diagnostic quiz for students.
 Your task is to generate exactly ${validCount} multiple-choice questions grounded STRICTLY in the provided study excerpts.
 
@@ -105,7 +114,7 @@ Rules:
 2. Provide exactly 4 plausible options for each question (indices 0, 1, 2, 3).
 3. Specify the exact zero-based integer index of the single correct option ('correctOptionIndex': 0, 1, 2, or 3).
 4. Provide a clear, educational explanation explaining WHY the correct option is right and referencing the excerpt notes.
-5. Group questions under clean, consistent topic tags (e.g., 'Core Concepts', 'Architectures', 'Formulas'). Pick 2 to 4 distinct topic tags overall. Do not invent random tags.
+5. Group questions under clean, consistent topic tags (e.g., 'Core Concepts', 'Architectures', 'Formulas'). Pick 2 to 4 distinct topic tags overall. Do not invent random tags.${focusInstruction}
 6. You MUST return ONLY a valid, parseable JSON object matching this exact JSON schema:
 {
   "title": "${documents[0]?.title || 'Study'} Diagnostic Quiz",
@@ -344,11 +353,58 @@ Do not include any conversational filler, markdown commentary, or text outside t
       attemptedAt: new Date(),
     });
 
+    // Incrementally update user's TopicMastery rolling aggregate
+    try {
+      await analyticsService.recordAttemptMastery(userId, perTopicResult);
+    } catch (analyticsErr) {
+      console.error('[quiz] Failed to update TopicMastery aggregate:', analyticsErr);
+    }
+
     console.log(
       `[quiz] Evaluated Quiz ${quizId} for user ${userId}: Score ${scorePercentage}% (${correctCount}/${totalQuestions})`
     );
 
     return { attempt, quiz };
+  }
+
+  /**
+   * Generates a focused quiz weighted specifically toward the student's weakest topics.
+   * If target topics or document IDs are omitted, automatically fetches the user's weakest topics
+   * and ready documents.
+   */
+  public async generateFocusedQuiz(
+    userId: string,
+    documentIds?: string[],
+    questionCount = 5,
+    requestedFocusTopics?: string[]
+  ): Promise<IQuiz> {
+    let targetDocIds = documentIds;
+
+    // Default to ready documents if none supplied
+    if (!targetDocIds || targetDocIds.length === 0) {
+      const readyDocs = await DocumentModel.find({
+        userId: new Types.ObjectId(userId),
+        status: 'ready',
+      })
+        .select('_id')
+        .limit(6)
+        .exec();
+
+      if (readyDocs.length === 0) {
+        throw new ValidationError('No ready documents found to generate a focused quiz.');
+      }
+
+      targetDocIds = readyDocs.map((d) => d._id.toString());
+    }
+
+    // Determine target topics: user requested or automatically derived weak topics (<75% mastery)
+    let focusTopics = requestedFocusTopics?.filter((t) => t.trim().length > 0) || [];
+    if (focusTopics.length === 0) {
+      const weakTopics = await analyticsService.getWeakTopics(userId, 4);
+      focusTopics = weakTopics.map((wt) => wt.topicTag);
+    }
+
+    return this.generateQuiz(userId, targetDocIds, questionCount, focusTopics);
   }
 
   /**
