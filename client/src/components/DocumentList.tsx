@@ -71,17 +71,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   return (
     <div className="rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50/60 px-6 py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 bg-neutral-50/60 px-4 py-3.5 sm:px-6 sm:py-4">
         <div>
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+          <span className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
             Study Library
           </span>
-          <h2 className="mt-0.5 text-base font-semibold tracking-tight text-neutral-950">
+          <h2 className="mt-0.5 text-sm sm:text-base font-semibold tracking-tight text-neutral-950">
             Uploaded Documents ({documents.length})
           </h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onOpenCreatePrimer && (
             <button
               onClick={onOpenCreatePrimer}
@@ -179,12 +179,12 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             return (
               <div
                 key={doc._id}
-                className="flex flex-col gap-3 p-5 transition hover:bg-neutral-50/70 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 p-4 sm:p-5 transition hover:bg-neutral-50/70 sm:flex-row sm:items-center sm:justify-between"
               >
                 {/* Document Info */}
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-start gap-3 sm:gap-3.5 min-w-0">
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${
+                    className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-md border ${
                       isPrimer
                         ? 'bg-teal-50 border-teal-200 text-teal-800'
                         : isImage
@@ -192,14 +192,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           : 'bg-neutral-100 border-neutral-200 text-neutral-800'
                     }`}
                   >
-                    <span className="font-mono text-xs font-bold uppercase">
+                    <span className="font-mono text-[11px] sm:text-xs font-bold uppercase">
                       {isPrimer ? 'DOC' : isImage ? 'IMG' : 'PDF'}
                     </span>
                   </div>
 
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-semibold text-neutral-950">{doc.title}</h4>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <h4 className="text-sm font-semibold text-neutral-950 break-words">{doc.title}</h4>
                       {isPrimer && (
                         <span className="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-2 py-0.5 font-mono text-[10px] font-semibold text-teal-800">
                           <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
@@ -223,7 +223,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     </div>
 
                     <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-neutral-600">
-                      <span className="rounded bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-neutral-800 font-medium">
+                      <span className="rounded bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-neutral-800 font-medium text-[11px]">
                         {doc.subject || 'General'}
                       </span>
                       <span>·</span>
@@ -243,7 +243,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       {doc.chunkCount > 0 && (
                         <>
                           <span>·</span>
-                          <span className="font-medium text-neutral-700">
+                          <span className="font-medium text-neutral-700 text-[11px]">
                             {doc.chunkCount} vector chunks
                           </span>
                         </>
@@ -253,7 +253,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 </div>
 
                 {/* Status Badge & Actions */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 self-start sm:self-auto">
                   {doc.status === 'processing' && (
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
@@ -428,8 +428,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
       {/* Delete Confirmation Modal */}
       {documentToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-700">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

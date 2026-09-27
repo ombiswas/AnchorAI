@@ -112,10 +112,10 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
       /\.(jpe?g|png|webp)$/i.test(selectedFile.name.toLowerCase()));
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="mb-5">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
             Document Ingestion · PDF & Images (OCR)
           </span>
           <span className="rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 font-mono text-[10px] font-semibold text-indigo-700">
@@ -157,7 +157,7 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => !isUploading && fileInputRef.current?.click()}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition ${
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-5 sm:p-8 text-center transition ${
             isDragging
               ? 'border-neutral-900 bg-neutral-100/50'
               : selectedFile
@@ -295,11 +295,11 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
         )}
 
         {/* Submit Button */}
-        <div className="flex justify-end pt-2">
+        <div className="flex flex-col sm:flex-row justify-end pt-2">
           <button
             type="submit"
             disabled={!selectedFile || isUploading}
-            className="inline-flex items-center justify-center rounded-md bg-neutral-950 px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-40 shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-neutral-950 px-6 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-40 shadow-sm"
           >
             {isUploading ? (
               <span className="flex items-center gap-2">

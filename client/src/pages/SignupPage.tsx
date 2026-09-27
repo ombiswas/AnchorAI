@@ -57,7 +57,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
   const activeError = formError || authError;
 
   return (
-    <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
+    <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-8 sm:py-16">
       <div className="w-full max-w-[400px]">
         {/* Brand Header */}
         <div className="mb-8">
@@ -109,7 +109,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
         )}
 
         {/* Form Container */}
-        <div className="rounded-lg border border-zinc-200/90 bg-white p-6 shadow-xs">
+        <div className="rounded-lg border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label

@@ -121,11 +121,11 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   return (
     <div className="flex flex-1 h-full min-h-0 flex-col rounded-xl border border-neutral-200/90 bg-white shadow-sm overflow-hidden">
       {/* Chat Scoped Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 bg-neutral-50 px-5 py-3 sm:px-6">
-        <div className="flex items-center gap-3.5">
+      <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-2.5 sm:px-6 sm:py-3 gap-2 sm:gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
           <button
             onClick={onBackToLibrary}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-neutral-300 bg-white text-neutral-800 transition hover:bg-neutral-100 hover:text-black shadow-2xs"
+            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-md border border-neutral-300 bg-white text-neutral-800 transition hover:bg-neutral-100 hover:text-black shadow-2xs"
             title="Back to Document Library"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,27 +138,27 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
             </svg>
           </button>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
-                RAG Scoped Session
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-600 truncate">
+                RAG Scoped
               </span>
-              <span className="rounded bg-neutral-200 px-2 py-0.5 font-mono text-[11px] font-medium text-neutral-800">
+              <span className="rounded bg-neutral-200 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-medium text-neutral-800 truncate max-w-[90px] sm:max-w-none">
                 {currentDoc.subject || 'General'}
               </span>
             </div>
-            <h2 className="mt-0.5 text-base font-semibold tracking-tight text-neutral-950">
+            <h2 className="mt-0.5 text-sm sm:text-base font-semibold tracking-tight text-neutral-950 truncate max-w-[130px] sm:max-w-[280px] md:max-w-md" title={currentDoc.title}>
               {currentDoc.title}
             </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* AI Fallback Mode Toggle */}
           <button
             type="button"
             onClick={() => setAllowFallback(!allowFallback)}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] font-medium border transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[11px] font-medium border transition ${
               allowFallback
                 ? 'border-indigo-200 bg-indigo-50/80 text-indigo-900 hover:bg-indigo-100/70'
                 : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
@@ -170,7 +170,8 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 allowFallback ? 'bg-indigo-600 animate-pulse' : 'bg-neutral-400'
               }`}
             />
-            <span>AI Fallback: {allowFallback ? 'On' : 'Off'}</span>
+            <span className="hidden sm:inline">AI Fallback: {allowFallback ? 'On' : 'Off'}</span>
+            <span className="sm:hidden">Fallback: {allowFallback ? 'On' : 'Off'}</span>
           </button>
 
           {messages.length > 0 && (
@@ -183,20 +184,20 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                   setAppendSuccessNotice(null);
                 }
               }}
-              className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 py-1 font-mono text-[11px] font-medium text-neutral-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 shadow-2xs"
+              className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 sm:px-2.5 py-1 font-mono text-[10px] sm:text-[11px] font-medium text-neutral-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 shadow-2xs"
               title="Clear all messages in this conversation"
             >
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              <span>Clear</span>
+              <span className="hidden sm:inline">Clear</span>
             </button>
           )}
 
-          <span className="font-mono text-xs font-medium text-neutral-600">
+          <span className="hidden sm:inline-block font-mono text-xs font-medium text-neutral-600">
             {currentDoc.chunkCount} Chunks
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-emerald-800">
+          <span className="hidden md:inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-emerald-800">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
             Atlas Grounded
           </span>
@@ -221,7 +222,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
       )}
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 bg-neutral-50/30">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 bg-neutral-50/30">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto py-8">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#010120] text-white shadow-sm">
@@ -268,7 +269,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
               >
                 {msg.sender === 'user' ? (
                   /* User Message: Clean right-aligned bubble */
-                  <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-neutral-900 px-5 py-3.5 text-white shadow-sm leading-relaxed text-sm">
+                  <div className="max-w-[88%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-neutral-900 px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-sm leading-relaxed text-sm">
                     <div className="mb-1.5 flex items-center justify-between gap-4 font-mono text-xs">
                       <span className="text-neutral-300 font-semibold uppercase tracking-wider text-[11px]">
                         You
@@ -280,7 +281,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 ) : (
                   /* AI Response: Full-width container (ChatGPT style) for maximum space & rich formatting */
                   <div
-                    className={`w-full rounded-xl p-5 sm:p-6 leading-relaxed text-sm transition-all ${
+                    className={`w-full rounded-xl p-4 sm:p-6 leading-relaxed text-sm transition-all ${
                       isGeneralMode
                         ? 'border border-amber-300/80 bg-amber-50/40 text-neutral-900 shadow-2xs'
                         : 'border border-neutral-200/90 bg-white text-neutral-900 shadow-2xs'
@@ -577,7 +578,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
         )}
 
         {/* Sticky Input Bar */}
-        <form onSubmit={handleSendMessage} className="p-3 sm:p-4">
+        <form onSubmit={handleSendMessage} className="p-2.5 sm:p-4">
           <div className="relative flex items-center">
             <input
               type="text"
@@ -585,13 +586,13 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={`Ask a question grounded in ${currentDoc.title}...`}
               disabled={isLoading}
-              className="w-full rounded-xl border border-neutral-300 bg-white pl-4 pr-24 py-3.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none shadow-2xs transition"
+              className="w-full rounded-xl border border-neutral-300 bg-white pl-3.5 sm:pl-4 pr-20 sm:pr-24 py-3 sm:py-3.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none shadow-2xs transition"
             />
 
             <button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className="absolute right-2 inline-flex items-center justify-center rounded-lg bg-neutral-950 px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-40 shadow-xs"
+              className="absolute right-1.5 sm:right-2 inline-flex items-center justify-center rounded-lg bg-neutral-950 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-40 shadow-xs"
             >
               {isLoading ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />

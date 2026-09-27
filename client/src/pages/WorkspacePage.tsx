@@ -88,35 +88,35 @@ export const WorkspacePage: React.FC = () => {
     <div
       className={`mx-auto w-full ${
         activeChatDoc
-          ? 'h-[calc(100vh-62px)] max-w-5xl px-3 sm:px-6 py-3 flex flex-col flex-1 min-h-0'
-          : 'max-w-5xl px-4 py-8 sm:px-6'
+          ? 'h-[calc(100vh-57px)] sm:h-[calc(100vh-62px)] max-w-5xl px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex flex-col flex-1 min-h-0'
+          : 'max-w-5xl px-3 sm:px-6 py-4 sm:py-8'
       }`}
     >
       {/* Top Banner (hidden during active chat or active quiz to maximize focus) */}
       {!activeQuiz && !quizResult && !activeChatDoc && (
-        <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 sm:mb-8 rounded-xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-neutral-600">
+                <span className="font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   Session Active · Workspace
                 </span>
               </div>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-neutral-950">
+              <h1 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-neutral-950">
                 Welcome back, {user?.name}
               </h1>
-              <p className="mt-0.5 text-sm text-neutral-600">
+              <p className="mt-0.5 text-xs sm:text-sm text-neutral-600">
                 Account:{' '}
                 <span className="font-mono font-medium text-neutral-900">{user?.email}</span>
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
               {readyCount > 0 && !activeChatDoc && (
                 <button
                   onClick={() => handleOpenGenerator()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3.5 font-mono text-xs font-semibold uppercase tracking-wider text-indigo-800 transition hover:bg-indigo-100 shadow-2xs"
+                  className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3 sm:px-3.5 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-800 transition hover:bg-indigo-100 shadow-2xs"
                 >
                   <svg
                     className="h-3.5 w-3.5 text-indigo-600"
@@ -136,7 +136,7 @@ export const WorkspacePage: React.FC = () => {
               )}
               <button
                 onClick={logout}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-neutral-300 bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-neutral-800 transition hover:bg-neutral-100 hover:text-black shadow-2xs"
+                className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md border border-neutral-300 bg-white px-3 sm:px-4 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-800 transition hover:bg-neutral-100 hover:text-black shadow-2xs"
               >
                 Sign Out
               </button>
@@ -144,34 +144,34 @@ export const WorkspacePage: React.FC = () => {
           </div>
 
           {/* Stats Row */}
-          <div className="mt-6 grid grid-cols-2 gap-3.5 border-t border-neutral-100 pt-5 sm:grid-cols-4">
-            <div className="rounded-md border border-neutral-200 bg-neutral-50/70 p-3.5">
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-neutral-600">
+          <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-2.5 sm:gap-3.5 border-t border-neutral-100 pt-4 sm:pt-5 sm:grid-cols-4">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 sm:p-3.5">
+              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-600">
                 Total Ingested
               </span>
-              <div className="mt-1 font-mono text-2xl font-bold text-neutral-950">
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-neutral-950">
                 {documents.length}
               </div>
             </div>
-            <div className="rounded-md border border-emerald-200 bg-emerald-50/50 p-3.5">
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-emerald-800">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 sm:p-3.5">
+              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-800">
                 Ready for RAG
               </span>
-              <div className="mt-1 font-mono text-2xl font-bold text-emerald-700">{readyCount}</div>
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-emerald-700">{readyCount}</div>
             </div>
-            <div className="rounded-md border border-amber-200 bg-amber-50/50 p-3.5">
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-amber-800">
+            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 sm:p-3.5">
+              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-amber-800">
                 Processing
               </span>
-              <div className="mt-1 font-mono text-2xl font-bold text-amber-700">
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-amber-700">
                 {processingCount}
               </div>
             </div>
-            <div className="rounded-md border border-red-200 bg-red-50/50 p-3.5">
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-red-800">
+            <div className="rounded-lg border border-red-200 bg-red-50/50 p-3 sm:p-3.5">
+              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-red-800">
                 Failed
               </span>
-              <div className="mt-1 font-mono text-2xl font-bold text-red-700">{failedCount}</div>
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-red-700">{failedCount}</div>
             </div>
           </div>
         </div>
@@ -214,10 +214,10 @@ export const WorkspacePage: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {/* Navigation Tabs */}
-          <div className="flex border-b border-neutral-200">
+          <div className="flex border-b border-neutral-200 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
             <button
               onClick={() => setActiveTab('library')}
-              className={`flex items-center gap-2 border-b-2 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition ${
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-3.5 sm:px-5 py-2.5 sm:py-3 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition ${
                 activeTab === 'library'
                   ? 'border-[#010120] text-neutral-950 font-bold'
                   : 'border-transparent text-neutral-500 hover:text-neutral-800'
@@ -231,7 +231,7 @@ export const WorkspacePage: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 border-b-2 px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition ${
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-3.5 sm:px-5 py-2.5 sm:py-3 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition ${
                 activeTab === 'dashboard'
                   ? 'border-[#010120] text-neutral-950 font-bold'
                   : 'border-transparent text-neutral-500 hover:text-neutral-800'

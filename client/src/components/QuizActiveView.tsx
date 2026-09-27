@@ -75,7 +75,7 @@ export const QuizActiveView: React.FC<QuizActiveViewProps> = ({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Top Header Card */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export const QuizActiveView: React.FC<QuizActiveViewProps> = ({
                 {answeredCount} of {totalQuestions} answered
               </span>
             </div>
-            <h1 className="mt-1 text-xl font-bold tracking-tight text-neutral-950">{quiz.title}</h1>
+            <h1 className="mt-1 text-lg sm:text-xl font-bold tracking-tight text-neutral-950">{quiz.title}</h1>
           </div>
 
           <button
@@ -99,7 +99,7 @@ export const QuizActiveView: React.FC<QuizActiveViewProps> = ({
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-5">
+        <div className="mt-4 sm:mt-5">
           <div className="flex justify-between font-mono text-[11px] text-neutral-600">
             <span>
               Question {currentIndex + 1} of {totalQuestions}
@@ -115,7 +115,7 @@ export const QuizActiveView: React.FC<QuizActiveViewProps> = ({
         </div>
 
         {/* Question Bubble Navigator */}
-        <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
+        <div className="mt-4 flex flex-wrap gap-1.5 sm:gap-2 pt-2 border-t border-neutral-100">
           {quiz.questions.map((_, idx) => {
             const isAnswered = selectedAnswers[idx] !== undefined;
             const isCurrent = currentIndex === idx;
@@ -124,7 +124,7 @@ export const QuizActiveView: React.FC<QuizActiveViewProps> = ({
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`flex h-8 w-8 items-center justify-center rounded-md font-mono text-xs font-bold transition border ${
+                className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md font-mono text-xs font-bold transition border ${
                   isCurrent
                     ? 'border-[#010120] bg-[#010120] text-white shadow-xs'
                     : isAnswered
@@ -140,13 +140,13 @@ export const QuizActiveView: React.FC<QuizActiveViewProps> = ({
       </div>
 
       {errorMsg && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-4 text-xs font-semibold text-red-900">
+        <div className="rounded-md border border-red-300 bg-red-50 p-3.5 sm:p-4 text-xs font-semibold text-red-900">
           {errorMsg}
         </div>
       )}
 
       {/* Active Question Card */}
-      <div className="rounded-xl border border-neutral-200 bg-white p-7 shadow-sm">
+      <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-7 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50/70 px-3 py-0.5 font-mono text-[11px] font-semibold text-indigo-700">
             <span>🏷️</span>

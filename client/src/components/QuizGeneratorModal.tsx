@@ -68,8 +68,8 @@ export const QuizGeneratorModal: React.FC<QuizGeneratorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-xs">
+      <div className="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-200">
@@ -188,12 +188,12 @@ export const QuizGeneratorModal: React.FC<QuizGeneratorModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-neutral-100 pt-4">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 border-t border-neutral-100 pt-4">
           <button
             type="button"
             onClick={onClose}
             disabled={isGenerating}
-            className="rounded-md border border-neutral-300 bg-white px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-md border border-neutral-300 bg-white px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 text-center"
           >
             Cancel
           </button>
@@ -201,7 +201,7 @@ export const QuizGeneratorModal: React.FC<QuizGeneratorModalProps> = ({
             type="button"
             onClick={handleGenerate}
             disabled={isGenerating || readyDocs.length === 0}
-            className="inline-flex items-center gap-2 rounded-md bg-[#010120] px-5 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-neutral-800 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-[#010120] px-5 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-neutral-800 disabled:opacity-50"
           >
             {isGenerating ? (
               <>
