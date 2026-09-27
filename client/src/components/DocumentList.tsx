@@ -28,11 +28,26 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   const [cascadeDelete, setCascadeDelete] = useState<boolean>(true);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [retryingDocId, setRetryingDocId] = useState<string | null>(null);
+  const [reprocessError, setReprocessError] = useState<string | null>(null);
 
   const handleInitiateDelete = (doc: StudyDocument) => {
     setDeleteError(null);
     setCascadeDelete(true);
     setDocumentToDelete(doc);
+  };
+
+  const handleRetry = async (doc: StudyDocument) => {
+    try {
+      setRetryingDocId(doc._id);
+      setReprocessError(null);
+      await api.documents.reprocess(doc._id);
+      onRefresh();
+    } catch (err) {
+      setReprocessError((err as Error).message || 'Failed to retry document processing');
+    } finally {
+      setRetryingDocId(null);
+    }
   };
 
   // Auto-poll if any document is currently in 'processing' status
@@ -157,6 +172,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Reprocess Error Banner */}
+      {reprocessError && (
+        <div className="flex items-center justify-between border-b border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
+          <span className="font-medium">{reprocessError}</span>
+          <button
+            onClick={() => setReprocessError(null)}
+            className="ml-3 font-mono text-sm font-bold text-rose-600 hover:text-rose-900"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Document Items or Empty State */}
       {documents.length === 0 ? (
@@ -358,6 +386,28 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
                   {doc.status === 'failed' && (
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRetry(doc)}
+                        disabled={retryingDocId === doc._id}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-semibold uppercase tracking-wider text-amber-900 transition hover:bg-amber-100 disabled:opacity-50 shadow-2xs"
+                        title="Retry processing document"
+                      >
+                        <svg
+                          className={`h-3.5 w-3.5 text-amber-700 ${retryingDocId === doc._id ? 'animate-spin' : ''}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                        <span>{retryingDocId === doc._id ? 'Retrying...' : 'Retry'}</span>
+                      </button>
                       <button
                         onClick={() => setSelectedDocForError(doc)}
                         className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-red-900 hover:bg-red-100"

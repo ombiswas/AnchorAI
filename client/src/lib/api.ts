@@ -132,6 +132,17 @@ class ApiClient {
       );
     },
 
+    reprocess: async (
+      id: string
+    ): Promise<{ document: StudyDocument; message: string }> => {
+      return this.request<{ document: StudyDocument; message: string }>(
+        `/documents/${id}/reprocess`,
+        {
+          method: 'POST',
+        }
+      );
+    },
+
     upload: async (
       file: File,
       title?: string,

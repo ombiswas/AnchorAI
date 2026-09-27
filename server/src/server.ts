@@ -1,5 +1,6 @@
 import cors from 'cors';
 import helmet from 'helmet';
+import morgan from 'morgan';
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { connectDB } from './config/db';
@@ -24,6 +25,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(morgan('combined'));
 app.use(express.json({ limit: '1mb' }));
 
 // Serve local uploads folder statically for dev fallback

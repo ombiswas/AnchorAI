@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import mongoose, { Types } from 'mongoose';
 import { uploadFileBuffer } from '../config/cloudinary';
 import { ChunkModel } from '../models/chunk.model';
@@ -547,6 +549,148 @@ Rules:
       affectedTopicsCount: affectedTopicTags.length,
       affectedTopicTags,
     };
+  }
+
+  /**
+   * Manually re-triggers extraction, chunking, and embedding for a document currently in 'failed' status.
+   * Reuses the existing ingestion pipeline functions directly without duplicating chunking/embedding logic.
+   */
+  public async reprocessDocument(userId: string, documentId: string): Promise<IDocument> {
+    if (!Types.ObjectId.isValid(documentId)) {
+      throw new ValidationError('Invalid document ID format');
+    }
+
+    const doc = await DocumentModel.findOne({
+      _id: new Types.ObjectId(documentId),
+      userId: new Types.ObjectId(userId),
+      isDeleted: { $ne: true },
+    }).select('+extractedText');
+
+    if (!doc) {
+      throw new NotFoundError('Document not found or access denied');
+    }
+
+    if (doc.status !== 'failed') {
+      throw new ValidationError(
+        `Only documents in 'failed' status can be reprocessed. Current status is '${doc.status}'.`
+      );
+    }
+
+    // Reset status to processing and clear errorReason
+    doc.status = 'processing';
+    doc.errorReason = undefined;
+    doc.updatedAt = new Date();
+    await doc.save();
+
+    // Trigger async ingestion pipeline reusing existing functions
+    setImmediate(async () => {
+      try {
+        const freshDoc = await DocumentModel.findById(doc._id).select('isDeleted').lean();
+        if (!freshDoc || freshDoc.isDeleted) {
+          console.warn(`[reprocess] Aborting: Document ${doc._id} was deleted before reprocessing started.`);
+          return;
+        }
+
+        // Case A: Primer document
+        if (doc.fileType === 'primer') {
+          if (doc.extractedText && doc.extractedText.trim()) {
+            await extractionService.ingestExtractedText(doc._id, doc.extractedText, 1);
+            return;
+          }
+
+          const cleanTopic = doc.title.replace(/\s*\(Study Primer\)\s*$/, '').trim();
+          const systemPrompt = `You are an elite university professor and curriculum author.
+Your task is to generate a comprehensive, highly structured academic study primer for students.
+Structure your notes with clear Markdown headings (##), bullet points, and code/formula blocks:
+
+## 1. Executive Summary & Core Definitions
+Define key terms, fundamental equations/theorems, and essential background context.
+
+## 2. Key Architecture & Mechanisms
+Explain how the system/concept works under the hood step-by-step.
+
+## 3. Common Pitfalls & Exam Misconceptions
+Highlight frequent student mistakes, subtle edge cases, and anti-patterns.
+
+## 4. Worked Examples & Practical Scenarios
+Provide concrete, step-by-step worked examples or code demonstrations illustrating the concepts.
+
+Rules:
+- Write detailed, academically rigorous material (around 1,000 to 1,500 words).
+- Use clear Markdown formatting with prominent headings.
+- Avoid generic conversational introductions or conclusions.`;
+
+          const userPrompt = `Topic: ${cleanTopic}\nSubject: ${doc.subject || 'General'}\n\nGenerate the complete structured study primer now.`;
+
+          let primerText = await llmService.generateCompletion({
+            systemPrompt,
+            userPrompt,
+            temperature: 0.2,
+            maxTokens: 3500,
+          });
+
+          if (primerText.startsWith('[Dev Mode Response]')) {
+            primerText =
+              `# ${cleanTopic}: Comprehensive Study Primer\n\n` +
+              `## 1. Executive Summary & Core Definitions\n` +
+              `**${cleanTopic}** is a core conceptual foundation in ${doc.subject || 'General'}.\n\n` +
+              `## 2. Key Architecture & Mechanisms\n` +
+              `Under the hood, the system coordinates state transitions through deterministic processing.\n\n` +
+              `## 3. Common Pitfalls & Exam Misconceptions\n` +
+              `- **Pitfall 1:** Confusing synchronous blocking calls with event-driven background queues.\n` +
+              `- **Pitfall 2:** Failing to validate partition boundaries under high load.\n\n` +
+              `## 4. Worked Examples & Practical Scenarios\n` +
+              `Consider an application processing requests with logarithmic asymptotic bounds O(log N).`;
+          }
+
+          await extractionService.ingestExtractedText(doc._id, primerText, 1);
+          return;
+        }
+
+        // Case B: PDF or Image
+        // If extracted text was already stored, reuse ingestExtractedText directly
+        if (doc.extractedText && doc.extractedText.trim()) {
+          await extractionService.ingestExtractedText(doc._id, doc.extractedText, 1);
+          return;
+        }
+
+        // Retrieve file buffer from local storage or remote URL
+        let fileBuffer: Buffer | null = null;
+        if (doc.fileUrl.startsWith('/uploads/')) {
+          const localPath = path.join(process.cwd(), doc.fileUrl.replace(/^\//, ''));
+          if (fs.existsSync(localPath)) {
+            fileBuffer = fs.readFileSync(localPath);
+          }
+        } else if (doc.fileUrl.startsWith('http://') || doc.fileUrl.startsWith('https://')) {
+          const response = await fetch(doc.fileUrl);
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            fileBuffer = Buffer.from(arrayBuffer);
+          }
+        }
+
+        if (!fileBuffer) {
+          throw new Error('Original file could not be retrieved from storage for reprocessing.');
+        }
+
+        if (doc.fileType === 'image') {
+          await ocrService.processImage(doc._id, fileBuffer, 'image/jpeg');
+        } else {
+          await extractionService.processPdf(doc._id, fileBuffer);
+        }
+      } catch (err) {
+        console.error(`[reprocess] Failed reprocessing document ${doc._id}:`, err);
+        const check = await DocumentModel.findById(doc._id).select('isDeleted').lean();
+        if (check && !check.isDeleted) {
+          await DocumentModel.findByIdAndUpdate(doc._id, {
+            status: 'failed',
+            errorReason: (err as Error).message || 'Reprocessing failed.',
+          });
+        }
+      }
+    });
+
+    return doc;
   }
 }
 

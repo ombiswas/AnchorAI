@@ -77,3 +77,24 @@ npm run dev      # Runs nodemon + ts-node at http://localhost:5000
 npm run build    # Type-checks and compiles to /dist
 npm run lint     # Lint server TypeScript code
 ```
+
+### 3. Server Environment Variables
+
+Create a `server/.env` file based on `server/.env.example`:
+
+| Variable | Description | Default / Example | Required in Production |
+|---|---|---|---|
+| `PORT` | API server listen port | `5000` | No (defaults to 5000) |
+| `NODE_ENV` | Application environment (`development` / `production`) | `development` | Yes |
+| `CLIENT_URL` | Exact URL of the frontend client application | `http://localhost:5173` | **YES** |
+| `MONGODB_URI` | MongoDB Atlas or replica set connection string | `mongodb://...` | **YES** |
+| `JWT_SECRET` | Secret key for signing JSON Web Tokens | `your_secret_key` | **YES** |
+| `LLM_PROVIDER` | Active LLM inference provider (`openai` or `groq`) | `openai` | Yes |
+| `OPENAI_API_KEY` | OpenAI API key (required if `LLM_PROVIDER=openai`) | `sk-...` | Conditional |
+| `GROQ_API_KEY` | Groq API key (required if `LLM_PROVIDER=groq`) | `gsk_...` | Conditional |
+| `CLOUDINARY_*` | Cloudinary credentials for persistent cloud file uploads | `...` | Optional (local dev fallback) |
+
+> [!CRITICAL]
+> **Production CORS Guard (`CLIENT_URL`):**
+> `CLIENT_URL` is configured as the CORS origin whitelist in Express. In production, this must be set to the exact deployed client origin (e.g. `https://anchor-ai.vercel.app` without trailing slash). **Omitting or misconfiguring `CLIENT_URL` will silently block all frontend cross-origin requests with CORS policy errors.**
+

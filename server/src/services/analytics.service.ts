@@ -183,69 +183,151 @@ export class AnalyticsService {
 
   /**
    * Aggregates comprehensive dashboard metrics for the student.
+   * Uses optimized MongoDB aggregation pipelines with $facet, $lookup, and $group
+   * to eliminate N+1 query patterns and avoid hydrating large collections into Node memory.
    */
   public async getDashboardData(userId: string): Promise<DashboardData> {
     const userObjectId = new Types.ObjectId(userId);
 
-    // 1. Fetch all quiz attempts for aggregated score calculations
-    const attempts = await QuizAttemptModel.find({ userId: userObjectId })
-      .sort({ attemptedAt: -1 })
-      .populate<{ quizId: { _id: Types.ObjectId; title: string; subject: string } }>({
-        path: 'quizId',
-        select: 'title subject',
-      })
-      .exec();
+    // Execute aggregated queries concurrently via Promise.all
+    const [
+      [attemptAgg],
+      docSubjectCounts,
+      weakTopics,
+      topicsTrackedCount,
+    ] = await Promise.all([
+      // 1. Single MongoDB aggregation pipeline on QuizAttempts:
+      // Computes overall stats, recent attempts with joined quiz metadata, and per-subject quiz counts
+      QuizAttemptModel.aggregate<{
+        stats: Array<{ totalQuizzesTaken: number; averageScore: number }>;
+        recentAttempts: Array<{
+          _id: Types.ObjectId;
+          quizId: Types.ObjectId;
+          quizTitle: string;
+          subject: string;
+          score: number;
+          totalQuestions: number;
+          correctCount: number;
+          attemptedAt: Date;
+        }>;
+        subjectQuizCounts: Array<{ _id: string; quizCount: number }>;
+      }>([
+        { $match: { userId: userObjectId } },
+        {
+          $facet: {
+            stats: [
+              {
+                $group: {
+                  _id: null,
+                  totalQuizzesTaken: { $sum: 1 },
+                  averageScore: { $avg: '$score' },
+                },
+              },
+            ],
+            recentAttempts: [
+              { $sort: { attemptedAt: -1 } },
+              { $limit: 5 },
+              {
+                $lookup: {
+                  from: 'quizzes',
+                  localField: 'quizId',
+                  foreignField: '_id',
+                  as: 'quiz',
+                },
+              },
+              { $unwind: { path: '$quiz', preserveNullAndEmptyArrays: true } },
+              {
+                $project: {
+                  _id: 1,
+                  quizId: 1,
+                  quizTitle: { $ifNull: ['$quiz.title', 'Knowledge Assessment'] },
+                  subject: { $ifNull: ['$quiz.subject', 'General'] },
+                  score: 1,
+                  totalQuestions: { $size: { $ifNull: ['$answers', []] } },
+                  correctCount: {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ['$answers', []] },
+                        as: 'ans',
+                        cond: { $eq: ['$$ans.isCorrect', true] },
+                      },
+                    },
+                  },
+                  attemptedAt: 1,
+                },
+              },
+            ],
+            subjectQuizCounts: [
+              {
+                $lookup: {
+                  from: 'quizzes',
+                  localField: 'quizId',
+                  foreignField: '_id',
+                  as: 'quiz',
+                },
+              },
+              { $unwind: { path: '$quiz', preserveNullAndEmptyArrays: true } },
+              {
+                $group: {
+                  _id: { $ifNull: ['$quiz.subject', 'General'] },
+                  quizCount: { $sum: 1 },
+                },
+              },
+            ],
+          },
+        },
+      ]),
 
-    const totalQuizzesTaken = attempts.length;
-    const averageScore =
-      totalQuizzesTaken > 0
-        ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / totalQuizzesTaken)
-        : 0;
+      // 2. Aggregate document counts grouped by subject (ignoring soft-deleted documents)
+      DocumentModel.aggregate<{ _id: string; documentCount: number }>([
+        { $match: { userId: userObjectId, isDeleted: { $ne: true } } },
+        {
+          $group: {
+            _id: { $ifNull: ['$subject', 'General'] },
+            documentCount: { $sum: 1 },
+          },
+        },
+      ]),
 
-    // 2. Fetch weak topics (ascending by accuracy)
-    const weakTopics = await this.getWeakTopics(userId, 8);
+      // 3. Weak topics
+      this.getWeakTopics(userId, 8),
+
+      // 4. Total topics tracked count
+      TopicMasteryModel.countDocuments({ userId: userObjectId }).exec(),
+    ]);
+
+    // Parse stats
+    const statsItem = attemptAgg?.stats?.[0];
+    const totalQuizzesTaken = statsItem?.totalQuizzesTaken || 0;
+    const averageScore = statsItem?.averageScore ? Math.round(statsItem.averageScore) : 0;
     const weakTopicsCount = weakTopics.filter((t) => t.rollingAccuracy < 75).length;
-    const topicsTrackedCount = await TopicMasteryModel.countDocuments({
-      userId: userObjectId,
-    }).exec();
 
-    // 3. Recent 5 attempts with quiz metadata
-    const recentAttempts: RecentAttemptSummary[] = attempts.slice(0, 5).map((a) => {
-      const quizRef = a.quizId as unknown as {
-        _id?: Types.ObjectId;
-        title?: string;
-        subject?: string;
-      };
-      const correctCount = a.answers.filter((ans) => ans.isCorrect).length;
+    // Map recent attempts
+    const recentAttempts: RecentAttemptSummary[] = (attemptAgg?.recentAttempts || []).map((a) => ({
+      attemptId: a._id.toString(),
+      quizId: a.quizId ? a.quizId.toString() : '',
+      quizTitle: a.quizTitle || 'Knowledge Assessment',
+      subject: a.subject || 'General',
+      score: a.score,
+      totalQuestions: a.totalQuestions,
+      correctCount: a.correctCount,
+      attemptedAt: a.attemptedAt,
+    }));
 
-      return {
-        attemptId: a._id.toString(),
-        quizId: quizRef?._id ? quizRef._id.toString() : a.quizId.toString(),
-        quizTitle: quizRef?.title || 'Knowledge Assessment',
-        subject: quizRef?.subject || 'General',
-        score: a.score,
-        totalQuestions: a.answers.length,
-        correctCount,
-        attemptedAt: a.attemptedAt,
-      };
-    });
-
-    // 4. Subject summary across documents and attempts
-    const documents = await DocumentModel.find({ userId: userObjectId }).select('subject').exec();
+    // Merge document and quiz subject summaries
     const subjectMap = new Map<string, { docs: number; quizzes: number }>();
 
-    for (const doc of documents) {
-      const sub = doc.subject || 'General';
+    for (const d of docSubjectCounts) {
+      const sub = d._id || 'General';
       const cur = subjectMap.get(sub) || { docs: 0, quizzes: 0 };
-      cur.docs += 1;
+      cur.docs = d.documentCount;
       subjectMap.set(sub, cur);
     }
 
-    for (const att of attempts) {
-      const quizRef = att.quizId as unknown as { subject?: string };
-      const sub = quizRef?.subject || 'General';
+    for (const q of (attemptAgg?.subjectQuizCounts || [])) {
+      const sub = q._id || 'General';
       const cur = subjectMap.get(sub) || { docs: 0, quizzes: 0 };
-      cur.quizzes += 1;
+      cur.quizzes = q.quizCount;
       subjectMap.set(sub, cur);
     }
 

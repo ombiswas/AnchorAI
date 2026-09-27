@@ -149,6 +149,27 @@ export class DocumentController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/documents/:id/reprocess
+   * Manually retries processing for a document currently in 'failed' status.
+   */
+  public async reprocess(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const document = await documentService.reprocessDocument(
+        req.userId as string,
+        req.params.id as string
+      );
+
+      res.status(200).json({ document, message: 'Document reprocessing initiated' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const documentController = new DocumentController();
