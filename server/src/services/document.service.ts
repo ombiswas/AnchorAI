@@ -3,10 +3,16 @@ import { uploadFileBuffer } from '../config/cloudinary';
 import { DocumentModel, IDocument } from '../models/document.model';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { extractionService } from './extraction.service';
+import { llmService } from './llm.service';
 import { ocrService } from './ocr.service';
 
 export interface UploadDocumentDto {
   title?: string;
+  subject?: string;
+}
+
+export interface CreatePrimerDto {
+  topic: string;
   subject?: string;
 }
 
@@ -71,6 +77,108 @@ export class DocumentService {
       } else {
         extractionService.processPdf(doc._id, file.buffer).catch((err) => {
           console.error(`Unhandled error in async PDF extraction for ${doc._id}:`, err);
+        });
+      }
+    });
+
+    return doc;
+  }
+
+  /**
+   * Generates a structured study primer for any academic topic without requiring an uploaded file.
+   *
+   * Architectural Decisions Explained:
+   * 1. Markdown Headings for Clean Chunk Boundaries: The LLM prompt enforces clear Markdown headings
+   *    (## 1. Core Definitions, ## 2. Key Mechanisms, ## 3. Common Pitfalls, ## 4. Worked Examples).
+   *    When processed by chunkTextWithTiktoken, these natural conceptual boundaries prevent key definitions
+   *    from getting sliced in half mid-sentence.
+   * 2. Pipeline Reuse (DRY): Reuses `extractionService.ingestExtractedText()` directly so that
+   *    chunking (~400 tokens, 50-token overlap), vector embedding generation, and MongoDB storage
+   *    remain 100% identical across PDFs, Images, and Primers.
+   * 3. Graceful Failure Lifecycle: If generation or vectorization fails, the document status is
+   *    explicitly marked 'failed' with errorReason rather than leaving orphaned records in 'processing'.
+   */
+  public async createPrimer(userId: string, dto: CreatePrimerDto): Promise<IDocument> {
+    const rawTopic = dto.topic?.trim();
+    if (!rawTopic || rawTopic.length < 2) {
+      throw new ValidationError('Topic must be at least 2 characters long.');
+    }
+    if (rawTopic.length > 150) {
+      throw new ValidationError('Topic title cannot exceed 150 characters.');
+    }
+
+    const sanitizedTopic = llmService.sanitizeUserInput(rawTopic);
+    const sanitizedSubject = dto.subject?.trim()
+      ? llmService.sanitizeUserInput(dto.subject.trim().slice(0, 100))
+      : 'General';
+
+    // 1. Create document entry with 'processing' status
+    const doc = await DocumentModel.create({
+      userId: new Types.ObjectId(userId),
+      title: `${sanitizedTopic} (Study Primer)`,
+      subject: sanitizedSubject,
+      fileType: 'primer',
+      fileUrl: 'internal://primer',
+      status: 'processing',
+      chunkCount: 0,
+      createdAt: new Date(),
+    });
+
+    // 2. Run LLM generation and vectorization asynchronously without blocking HTTP response
+    setImmediate(async () => {
+      try {
+        const systemPrompt = `You are an elite university professor and curriculum author.
+Your task is to generate a comprehensive, highly structured academic study primer for students.
+Structure your notes with clear Markdown headings (##), bullet points, and code/formula blocks:
+
+## 1. Executive Summary & Core Definitions
+Define key terms, fundamental equations/theorems, and essential background context.
+
+## 2. Key Architecture & Mechanisms
+Explain how the system/concept works under the hood step-by-step.
+
+## 3. Common Pitfalls & Exam Misconceptions
+Highlight frequent student mistakes, subtle edge cases, and anti-patterns.
+
+## 4. Worked Examples & Practical Scenarios
+Provide concrete, step-by-step worked examples or code demonstrations illustrating the concepts.
+
+Rules:
+- Write detailed, academically rigorous material (around 1,000 to 1,500 words).
+- Use clear Markdown formatting with prominent headings.
+- Avoid generic conversational introductions or conclusions.`;
+
+        const userPrompt = `Topic: ${sanitizedTopic}\nSubject: ${sanitizedSubject}\n\nGenerate the complete structured study primer now.`;
+
+        let primerText = await llmService.generateCompletion({
+          systemPrompt,
+          userPrompt,
+          temperature: 0.2,
+          maxTokens: 3500,
+        });
+
+        // Offline dev mock fallback
+        if (primerText.startsWith('[Dev Mode Response]')) {
+          primerText =
+            `# ${sanitizedTopic}: Comprehensive Study Primer\n\n` +
+            `## 1. Executive Summary & Core Definitions\n` +
+            `**${sanitizedTopic}** is a core conceptual foundation in ${sanitizedSubject}.\n\n` +
+            `## 2. Key Architecture & Mechanisms\n` +
+            `Under the hood, the system coordinates state transitions through deterministic processing.\n\n` +
+            `## 3. Common Pitfalls & Exam Misconceptions\n` +
+            `- **Pitfall 1:** Confusing synchronous blocking calls with event-driven background queues.\n` +
+            `- **Pitfall 2:** Failing to validate partition boundaries under high load.\n\n` +
+            `## 4. Worked Examples & Practical Scenarios\n` +
+            `Consider an application processing requests with logarithmic asymptotic bounds O(log N).`;
+        }
+
+        // 3. Feed directly into shared chunking + embedding pipeline from Phase 1c
+        await extractionService.ingestExtractedText(doc._id, primerText, 1);
+      } catch (err) {
+        console.error(`[primer] Generation/ingestion failed for document ${doc._id}:`, err);
+        await DocumentModel.findByIdAndUpdate(doc._id, {
+          status: 'failed',
+          errorReason: (err as Error).message || 'Study primer generation failed.',
         });
       }
     });

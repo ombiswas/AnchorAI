@@ -89,6 +89,18 @@ class ApiClient {
       });
     },
 
+    createPrimer: async (
+      payload: import('../types/document.types').CreatePrimerRequest
+    ): Promise<import('../types/document.types').CreatePrimerResponse> => {
+      return this.request<import('../types/document.types').CreatePrimerResponse>(
+        '/documents/primer',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        }
+      );
+    },
+
     upload: async (
       file: File,
       title?: string,

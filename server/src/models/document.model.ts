@@ -1,12 +1,13 @@
 import { Document, Model, Schema, Types, model } from 'mongoose';
 
 export type DocumentStatus = 'processing' | 'ready' | 'failed';
+export type DocumentFileType = 'pdf' | 'image' | 'primer';
 
 export interface IDocument extends Document {
   userId: Types.ObjectId;
   title: string;
   subject: string;
-  fileType: string;
+  fileType: DocumentFileType;
   fileUrl: string;
   status: DocumentStatus;
   chunkCount: number;

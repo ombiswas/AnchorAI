@@ -8,6 +8,7 @@ interface DocumentListProps {
   onSelectChatDocument?: (doc: StudyDocument) => void;
   onSelectQuizDocument?: (doc: StudyDocument) => void;
   onOpenQuizGenerator?: () => void;
+  onOpenCreatePrimer?: () => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -17,6 +18,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onSelectChatDocument,
   onSelectQuizDocument,
   onOpenQuizGenerator,
+  onOpenCreatePrimer,
 }) => {
   const [selectedDocForError, setSelectedDocForError] = useState<StudyDocument | null>(null);
 
@@ -59,6 +61,28 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenCreatePrimer && (
+            <button
+              onClick={onOpenCreatePrimer}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-teal-300 bg-teal-50 px-3 font-mono text-xs font-semibold uppercase tracking-wider text-teal-800 transition hover:bg-teal-100 shadow-2xs"
+            >
+              <svg
+                className="h-3.5 w-3.5 text-teal-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Primer
+            </button>
+          )}
+
           {onOpenQuizGenerator && documents.some((d) => d.status === 'ready') && (
             <button
               onClick={onOpenQuizGenerator}
@@ -121,14 +145,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             No documents uploaded yet
           </h3>
           <p className="mt-1 max-w-sm text-xs text-neutral-600 leading-normal">
-            Upload your syllabus or lecture slide PDFs, or handwritten notes photos above to begin
-            ingesting text.
+            Upload your syllabus or lecture slide PDFs, handwritten notes photos, or generate a
+            study primer from any topic above.
           </p>
         </div>
       ) : (
         <div className="divide-y divide-neutral-100">
           {documents.map((doc) => {
             const isImage = doc.fileType === 'image';
+            const isPrimer = doc.fileType === 'primer';
 
             return (
               <div
@@ -139,19 +164,27 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 <div className="flex items-start gap-3.5">
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${
-                      isImage
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                        : 'bg-neutral-100 border-neutral-200 text-neutral-800'
+                      isPrimer
+                        ? 'bg-teal-50 border-teal-200 text-teal-800'
+                        : isImage
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                          : 'bg-neutral-100 border-neutral-200 text-neutral-800'
                     }`}
                   >
                     <span className="font-mono text-xs font-bold uppercase">
-                      {isImage ? 'IMG' : 'PDF'}
+                      {isPrimer ? 'DOC' : isImage ? 'IMG' : 'PDF'}
                     </span>
                   </div>
 
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="text-sm font-semibold text-neutral-950">{doc.title}</h4>
+                      {isPrimer && (
+                        <span className="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-2 py-0.5 font-mono text-[10px] font-semibold text-teal-800">
+                          <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                          AI Primer
+                        </span>
+                      )}
                       {isImage && (
                         <span className="rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 font-mono text-[10px] font-semibold text-indigo-700">
                           {doc.ocrEngine === 'vision-llm' ? 'Vision OCR' : 'OCR'}
@@ -191,7 +224,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   {doc.status === 'processing' && (
                     <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
                       <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
-                      {isImage ? 'Transcribing OCR...' : 'Extracting Text...'}
+                      {isPrimer
+                        ? 'Synthesizing Primer...'
+                        : isImage
+                          ? 'Transcribing OCR...'
+                          : 'Extracting Text...'}
                     </span>
                   )}
 

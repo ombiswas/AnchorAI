@@ -23,6 +23,26 @@ export class DocumentController {
   }
 
   /**
+   * POST /api/documents/primer
+   * Generates a structured academic study primer from a topic name.
+   */
+  public async createPrimer(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const doc = await documentService.createPrimer(req.userId as string, req.body);
+      res.status(201).json({
+        message: 'Study primer generation initiated successfully',
+        document: doc,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/documents
    */
   public async list(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

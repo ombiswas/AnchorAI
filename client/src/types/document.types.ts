@@ -1,11 +1,12 @@
 export type DocumentStatus = 'processing' | 'ready' | 'failed';
+export type DocumentFileType = 'pdf' | 'image' | 'primer';
 
 export interface StudyDocument {
   _id: string;
   userId: string;
   title: string;
   subject: string;
-  fileType: string;
+  fileType: DocumentFileType | string;
   fileUrl: string;
   status: DocumentStatus;
   chunkCount: number;
@@ -23,4 +24,14 @@ export interface DocumentUploadResponse {
 
 export interface DocumentListResponse {
   documents: StudyDocument[];
+}
+
+export interface CreatePrimerRequest {
+  topic: string;
+  subject?: string;
+}
+
+export interface CreatePrimerResponse {
+  message: string;
+  document: StudyDocument;
 }

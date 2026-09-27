@@ -33,3 +33,6 @@ Thumbs.db
 *.sw?
 
 /docs
+
+# OCR Models / Tesseract trained data
+*.traineddata

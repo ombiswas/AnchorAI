@@ -181,6 +181,8 @@ Do not include any conversational filler, markdown commentary, or text outside t
         systemPrompt,
         userPrompt,
         temperature: 0.2,
+        maxTokens: 4000,
+        responseFormat: { type: 'json_object' },
       });
 
       // Handle local dev mock response
@@ -190,7 +192,23 @@ Do not include any conversational filler, markdown commentary, or text outside t
 
       // Extract JSON substring from markdown backticks or braces
       const cleanedJson = this.extractJsonString(rawOutput);
-      const parsed = JSON.parse(cleanedJson);
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(cleanedJson);
+      } catch (parseErr) {
+        // Attempt repairing truncated or unclosed array JSON
+        console.warn(
+          '[quiz] Initial JSON.parse failed. Attempting structural recovery...',
+          (parseErr as Error).message
+        );
+        const repaired = this.repairIncompleteJson(cleanedJson);
+        if (repaired) {
+          parsed = JSON.parse(repaired);
+        } else {
+          throw parseErr;
+        }
+      }
 
       const validation = quizGenerationZodSchema.safeParse(parsed);
       if (validation.success) {
@@ -203,6 +221,66 @@ Do not include any conversational filler, markdown commentary, or text outside t
       console.warn('[quiz] JSON parse failed on LLM output:', (err as Error).message);
       return null;
     }
+  }
+
+  /**
+   * Attempts to salvage a truncated JSON response where an array of questions was cut off mid-stream.
+   */
+  private repairIncompleteJson(rawJson: string): string | null {
+    try {
+      const questionsKeyIdx = rawJson.indexOf('"questions"');
+      if (questionsKeyIdx === -1) return null;
+
+      const arrayStartIdx = rawJson.indexOf('[', questionsKeyIdx);
+      if (arrayStartIdx === -1) return null;
+
+      // Find the last complete question object closed by `}`
+      let lastQuestionCloseIdx = -1;
+      let depth = 0;
+      let inString = false;
+      let isEscaped = false;
+
+      for (let i = arrayStartIdx + 1; i < rawJson.length; i++) {
+        const char = rawJson[i];
+
+        if (isEscaped) {
+          isEscaped = false;
+          continue;
+        }
+        if (char === '\\') {
+          isEscaped = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+
+        if (!inString) {
+          if (char === '{') {
+            depth++;
+          } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+              lastQuestionCloseIdx = i;
+            }
+          }
+        }
+      }
+
+      if (lastQuestionCloseIdx > arrayStartIdx) {
+        // Construct closed valid JSON with all questions completed so far
+        const prefix = rawJson.slice(0, lastQuestionCloseIdx + 1);
+        const candidate = `${prefix}]}`;
+        JSON.parse(candidate); // test if candidate parses cleanly
+        console.log('[quiz] Successfully repaired truncated JSON response.');
+        return candidate;
+      }
+    } catch {
+      // Recovery failed, will return null
+    }
+
+    return null;
   }
 
   /**

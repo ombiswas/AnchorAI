@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { CreatePrimerModal } from '../components/CreatePrimerModal';
 import { DashboardView } from '../components/DashboardView';
 import { DocumentChat } from '../components/DocumentChat';
 import { DocumentList } from '../components/DocumentList';
@@ -20,6 +21,9 @@ export const WorkspacePage: React.FC = () => {
 
   // Main Tabs: 'library' | 'dashboard'
   const [activeTab, setActiveTab] = useState<'library' | 'dashboard'>('library');
+
+  // Primer Modal State
+  const [isPrimerModalOpen, setIsPrimerModalOpen] = useState<boolean>(false);
 
   // Quiz State
   const [isGeneratorOpen, setIsGeneratorOpen] = useState<boolean>(false);
@@ -231,6 +235,7 @@ export const WorkspacePage: React.FC = () => {
                 onSelectChatDocument={setActiveChatDoc}
                 onSelectQuizDocument={(doc) => handleOpenGenerator(doc._id)}
                 onOpenQuizGenerator={() => handleOpenGenerator()}
+                onOpenCreatePrimer={() => setIsPrimerModalOpen(true)}
               />
             </div>
           ) : (
@@ -241,6 +246,13 @@ export const WorkspacePage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Primer Generation Modal */}
+      <CreatePrimerModal
+        isOpen={isPrimerModalOpen}
+        onClose={() => setIsPrimerModalOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
 
       {/* Quiz Generation Modal */}
       <QuizGeneratorModal

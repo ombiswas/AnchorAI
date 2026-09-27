@@ -6,6 +6,8 @@ export interface LlmCompletionOptions {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  maxTokens?: number;
+  responseFormat?: { type: 'json_object' | 'text' };
 }
 
 export class LlmService {
@@ -26,7 +28,13 @@ export class LlmService {
    * Generates a completion from the selected provider (OpenAI or Groq).
    */
   public async generateCompletion(options: LlmCompletionOptions): Promise<string> {
-    const { systemPrompt, userPrompt, temperature = 0.1 } = options;
+    const {
+      systemPrompt,
+      userPrompt,
+      temperature = 0.1,
+      maxTokens = 3500,
+      responseFormat,
+    } = options;
     const preferredProvider = config.llmProvider;
     const activeProvider =
       preferredProvider === 'groq'
@@ -59,7 +67,8 @@ export class LlmService {
               { role: 'user', content: userPrompt },
             ],
             temperature,
-            max_tokens: 1024,
+            max_tokens: maxTokens,
+            response_format: responseFormat ? { type: responseFormat.type } : undefined,
           });
 
           return response.choices[0]?.message?.content || "I don't know based on your notes.";
@@ -76,7 +85,8 @@ export class LlmService {
                 { role: 'user', content: userPrompt },
               ],
               temperature,
-              max_tokens: 1024,
+              max_tokens: maxTokens,
+              response_format: responseFormat ? { type: responseFormat.type } : undefined,
             });
             return (
               fallbackResponse.choices[0]?.message?.content || "I don't know based on your notes."
@@ -106,7 +116,8 @@ export class LlmService {
             { role: 'user', content: userPrompt },
           ],
           temperature,
-          max_tokens: 1024,
+          max_tokens: maxTokens,
+          response_format: responseFormat ? { type: responseFormat.type } : undefined,
         });
 
         return response.choices[0]?.message?.content || "I don't know based on your notes.";
