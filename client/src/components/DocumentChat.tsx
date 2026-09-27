@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import type { ChatMessage, CitedSource } from '../types/chat.types';
 import type { StudyDocument } from '../types/document.types';
+import { MarkdownMessage } from './MarkdownMessage';
 
 interface DocumentChatProps {
   document: StudyDocument;
@@ -307,9 +308,10 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                   )}
 
                   {/* Message Body */}
-                  <div className="whitespace-pre-wrap font-normal text-[14.5px] leading-relaxed">
-                    {msg.text}
-                  </div>
+                  <MarkdownMessage
+                    content={msg.text}
+                    isUser={msg.sender === 'user'}
+                  />
 
                   {/* Append to Study Guide Button for General Knowledge answers */}
                   {isGeneralMode && (

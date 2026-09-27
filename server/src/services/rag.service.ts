@@ -31,7 +31,13 @@ Strict Grounding Rules:
 1. Answer ONLY from the provided context. Do NOT use outside knowledge, speculations, or general assumptions.
 2. If the answer cannot be found in or directly inferred from the provided context, you MUST state exactly: "I don't know based on your notes."
 3. Cite page numbers or source references whenever citing specific claims or formulas.
-4. Keep explanations clear, academic, and well-structured.`;
+
+Formatting & Structural Standards:
+- Organize your answer with clear Markdown headings (e.g. "### Summary", "### Key Concepts", "### Mechanisms", "### Comparison").
+- Maintain generous, clean paragraph spacing with blank lines between logical sections.
+- Highlight key terminology and definitions with **bold text**, and use inline code or code blocks for formulas, syntax, or commands.
+- Use structured bullet points with bold prefixes for lists, characteristics, or steps.
+- Whenever comparing concepts, properties, trade-offs, or criteria, present them in a clean Markdown table (e.g. | Feature | Concept A | Concept B |).`;
 
 /**
  * System prompt for fallback general-knowledge mode.
@@ -45,8 +51,14 @@ General Knowledge Rules:
 1. Explain the requested concept thoroughly, accurately, and pedagogically using your general academic knowledge.
 2. Clearly and honestly clarify at the start that this topic is not in their uploaded notes, but provide the complete conceptual explanation to assist their learning.
 3. NEVER pretend, imply, or hallucinate that this explanation came from the student's uploaded document or lecture slides.
-4. Structure the response cleanly with key definitions, core mechanisms, and a concrete example.
-5. Do NOT include fake citations or page numbers.`;
+4. Do NOT include fake citations or page numbers.
+
+Formatting & Structural Standards:
+- Structure the response with clear Markdown headings (e.g. "### Overview & Core Definition", "### Key Mechanisms & Steps", "### Comparative Analysis", "### Practical Example").
+- Maintain generous, clean paragraph spacing with blank lines between logical sections.
+- Highlight key terminology and definitions with **bold text**, and use inline code or code blocks for formulas, syntax, or commands.
+- Use structured bullet points with bold prefixes for lists, characteristics, or steps.
+- Whenever comparing concepts, architectures, approaches, or trade-offs, present the comparison in a clean Markdown table (e.g. | Criterion | Option A | Option B |).`;
 
 export interface CitedSource {
   chunkIndex: number;
@@ -143,7 +155,7 @@ export class RagService {
         )
         .join('\n\n---\n\n');
 
-      const userPrompt = `Document Excerpts:\n${contextBlocks}\n\nStudent Question:\n${question}`;
+      const userPrompt = `Document Excerpts:\n${contextBlocks}\n\nStudent Question:\n${question}\n\nFormatting Guidelines: Structure your answer using clear Markdown headings (###), clean paragraph spacing, bullet points, bold key terms, and Markdown tables if comparing concepts or attributes.`;
 
       answer = await llmService.generateCompletion({
         systemPrompt: STRICT_RAG_SYSTEM_PROMPT,
@@ -164,7 +176,7 @@ export class RagService {
         `[chat] Response mode: GENERAL (fallback triggered, topScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
       );
 
-      const userPrompt = `Current Document: "${doc.title}" (Subject: ${doc.subject || 'General'})\nStudent Question: ${question}\n\nPlease explain this concept clearly with definitions, mechanisms, and examples.`;
+      const userPrompt = `Current Document: "${doc.title}" (Subject: ${doc.subject || 'General'})\nStudent Question: ${question}\n\nFormatting Guidelines: Explain this concept clearly. Structure your response using clear Markdown headings (###), clean paragraph spacing, bullet points, bold key terms, and Markdown tables if comparing concepts, features, or trade-offs.`;
 
       answer = await llmService.generateCompletion({
         systemPrompt: GENERAL_KNOWLEDGE_SYSTEM_PROMPT,
