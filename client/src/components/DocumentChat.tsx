@@ -25,7 +25,20 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   const [allowFallback, setAllowFallback] = useState<boolean>(true);
   const [appendedGuideIds, setAppendedGuideIds] = useState<Set<string>>(new Set());
   const [appendingId, setAppendingId] = useState<string | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyResponse = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(id);
+      setTimeout(() => {
+        setCopiedMessageId((current) => (current === id ? null : current));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy message text:', err);
+    }
+  };
 
   // Sync if parent document prop updates
   useEffect(() => {
@@ -251,52 +264,114 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
             return (
               <div
                 key={msg.id}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                className={`flex flex-col w-full ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
-                <div
-                  className={`max-w-[85%] rounded-lg p-5 leading-relaxed text-sm ${
-                    msg.sender === 'user'
-                      ? 'bg-neutral-900 text-white shadow-sm'
-                      : isGeneralMode
-                        ? 'border border-amber-300/80 bg-amber-50/40 text-neutral-900 shadow-2xs'
-                        : 'border border-neutral-200 bg-white text-neutral-900 shadow-2xs'
-                  }`}
-                >
-                  {/* Sender Tag & Badges */}
-                  <div className="mb-2.5 flex items-center justify-between gap-6 font-mono text-xs">
-                    {msg.sender === 'user' ? (
-                      <span className="text-neutral-300 font-semibold uppercase tracking-wider">
+                {msg.sender === 'user' ? (
+                  /* User Message: Clean right-aligned bubble */
+                  <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-neutral-900 px-5 py-3.5 text-white shadow-sm leading-relaxed text-sm">
+                    <div className="mb-1.5 flex items-center justify-between gap-4 font-mono text-xs">
+                      <span className="text-neutral-300 font-semibold uppercase tracking-wider text-[11px]">
                         You
                       </span>
-                    ) : isGeneralMode ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100/90 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-950">
-                        <svg
-                          className="h-3 w-3 text-amber-700"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
-                        General Knowledge · Not in your notes
-                      </span>
-                    ) : (
-                      <span className="text-neutral-700 font-bold uppercase tracking-wider">
-                        AnchorAI Assistant
-                      </span>
-                    )}
-
-                    <span
-                      className={msg.sender === 'user' ? 'text-neutral-300' : 'text-neutral-500'}
-                    >
-                      {msg.timestamp}
-                    </span>
+                      <span className="text-neutral-400 text-[11px]">{msg.timestamp}</span>
+                    </div>
+                    <MarkdownMessage content={msg.text} isUser={true} />
                   </div>
+                ) : (
+                  /* AI Response: Full-width container (ChatGPT style) for maximum space & rich formatting */
+                  <div
+                    className={`w-full rounded-xl p-5 sm:p-6 leading-relaxed text-sm transition-all ${
+                      isGeneralMode
+                        ? 'border border-amber-300/80 bg-amber-50/40 text-neutral-900 shadow-2xs'
+                        : 'border border-neutral-200/90 bg-white text-neutral-900 shadow-2xs'
+                    }`}
+                  >
+                    {/* Header with Sender Tag and Copy Button */}
+                    <div className="mb-3 flex items-center justify-between gap-3 font-mono text-xs">
+                      <div className="flex items-center gap-2">
+                        {isGeneralMode ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100/90 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-950">
+                            <svg
+                              className="h-3 w-3 text-amber-700"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
+                            </svg>
+                            General Knowledge · Not in your notes
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="flex h-5 w-5 items-center justify-center rounded bg-[#010120] text-white text-[10px] font-bold">
+                              ⚓
+                            </span>
+                            <span className="text-neutral-800 font-bold uppercase tracking-wider text-[11px]">
+                              AnchorAI Assistant
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Copy Response Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleCopyResponse(msg.id, msg.text)}
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] font-semibold transition shadow-2xs active:scale-[0.98] ${
+                            copiedMessageId === msg.id
+                              ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                              : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'
+                          }`}
+                          title="Copy response to clipboard"
+                        >
+                          {copiedMessageId === msg.id ? (
+                            <>
+                              <svg
+                                className="h-3.5 w-3.5 text-emerald-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              <span className="font-semibold text-emerald-700">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="h-3.5 w-3.5 text-neutral-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.8}
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                              </svg>
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+
+                        <span className="text-neutral-400 font-mono text-[11px]">
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    </div>
 
                   {/* General Knowledge Fallback Notice */}
                   {isGeneralMode && (
@@ -308,10 +383,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                   )}
 
                   {/* Message Body */}
-                  <MarkdownMessage
-                    content={msg.text}
-                    isUser={msg.sender === 'user'}
-                  />
+                  <MarkdownMessage content={msg.text} isUser={false} />
 
                   {/* Append to Study Guide Button for General Knowledge answers */}
                   {isGeneralMode && (
@@ -379,7 +451,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                   )}
 
                   {/* No Context Alert for strict answers */}
-                  {msg.sender === 'assistant' && !isGeneralMode && isUnknownAnswer(msg.text) && (
+                  {!isGeneralMode && isUnknownAnswer(msg.text) && (
                     <div className="mt-3.5 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                       <span className="font-semibold">Notice:</span> The retrieved excerpts from
                       this document did not contain enough information to answer this question
@@ -388,10 +460,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                   )}
 
                   {/* Cited Sources & Latency under Grounded AI response */}
-                  {msg.sender === 'assistant' &&
-                    !isGeneralMode &&
-                    msg.sources &&
-                    msg.sources.length > 0 && (
+                  {!isGeneralMode && msg.sources && msg.sources.length > 0 && (
                       <div className="mt-4 border-t border-neutral-200 pt-3.5">
                         <div className="flex flex-wrap items-center justify-between gap-2.5">
                           <div className="flex flex-wrap items-center gap-2">
@@ -450,7 +519,8 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                         })}
                       </div>
                     )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })
