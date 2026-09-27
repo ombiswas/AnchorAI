@@ -153,6 +153,7 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
       <form onSubmit={handleUpload} className="space-y-4">
         {/* Drop Zone */}
         <div
+          id="workspace-upload-dropzone"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -166,6 +167,7 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
           }`}
         >
           <input
+            id="workspace-file-input"
             ref={fileInputRef}
             type="file"
             accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"

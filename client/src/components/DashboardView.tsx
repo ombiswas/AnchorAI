@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import type { DashboardData } from '../types/analytics.types';
 import type { QuizForTaking } from '../types/quiz.types';
+import { DashboardTabSkeleton } from './TabSkeletons';
 
 interface DashboardViewProps {
   onStartQuiz: (quiz: QuizForTaking) => void;
@@ -75,24 +76,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   if (isLoading && !data) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-neutral-200 bg-white p-8">
-        <svg
-          className="h-8 w-8 animate-spin text-neutral-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-        <p className="mt-3 font-mono text-xs text-neutral-600">Aggregating Mastery Metrics...</p>
-      </div>
-    );
+    return <DashboardTabSkeleton />;
   }
 
   const stats = data?.stats;

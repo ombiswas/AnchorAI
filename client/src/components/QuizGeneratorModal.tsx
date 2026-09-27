@@ -165,11 +165,20 @@ export const QuizGeneratorModal: React.FC<QuizGeneratorModalProps> = ({
 
           {/* Question Count Selection */}
           <div>
-            <label className="block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-700">
-              Number of Questions
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="quiz-question-count-input"
+                className="block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-700"
+              >
+                Number of Questions
+              </label>
+              <span className="font-mono text-[11px] font-semibold text-indigo-700">
+                Max 15 questions
+              </span>
+            </div>
+
             <div className="mt-2 flex gap-2">
-              {[3, 5, 8, 10].map((count) => (
+              {[3, 5, 10, 15].map((count) => (
                 <button
                   key={count}
                   type="button"
@@ -180,10 +189,37 @@ export const QuizGeneratorModal: React.FC<QuizGeneratorModalProps> = ({
                       : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
-                  {count} Questions
+                  {count} Qs
                 </button>
               ))}
             </div>
+
+            <div className="mt-3 flex items-center gap-3">
+              <div className="relative flex-1">
+                <input
+                  id="quiz-question-count-input"
+                  type="number"
+                  min={1}
+                  max={15}
+                  value={questionCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) {
+                      setQuestionCount(Math.min(15, Math.max(1, val)));
+                    }
+                  }}
+                  className="h-9 w-full rounded-md border border-neutral-300 bg-white px-3 font-mono text-xs text-neutral-900 focus:border-neutral-950 focus:outline-none"
+                  placeholder="Custom count (1–15)"
+                />
+              </div>
+              <span className="font-mono text-[11px] text-neutral-500">
+                (Range: 1 – 15)
+              </span>
+            </div>
+
+            <p className="mt-1.5 text-[11px] text-neutral-500 leading-normal">
+              AnchorAI supports a maximum of <strong>15 questions</strong> per assessment to ensure comprehensive coverage without context dilution.
+            </p>
           </div>
         </div>
 

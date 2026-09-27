@@ -56,45 +56,119 @@ AnchorAI/
 
 ## Getting Started
 
-`/client` and `/server` are completely independent Node projects with their own `package.json` and `node_modules`.
+`/client` and `/server` are independent Node.js projects with their own dependencies and scripts.
 
-### 1. Client Setup
+---
+
+### 1. Environment Variables Configuration
+
+#### A. Client Environment (`client/.env`)
+Copy `client/.env.example` to `client/.env`:
 ```bash
 cd client
-npm install
-npm run dev      # Runs Vite dev server at http://localhost:5173
-npm run build    # Type-check and bundle production assets
-npm run lint     # Lint client TypeScript code
+cp .env.example .env
 ```
 
-### 2. Server Setup
+| Variable | Description | Development Default | Required in Production |
+|---|---|---|---|
+| `VITE_API_URL` | Base URL pointing to the Express backend API (must include `/api`) | `http://localhost:5000/api` | **YES** (`https://<api-domain>/api`) |
+
+#### B. Server Environment (`server/.env`)
+Copy `server/.env.example` to `server/.env`:
 ```bash
 cd server
-npm install
-# Configure your environment variables
 cp .env.example .env
-npm run dev      # Runs nodemon + ts-node at http://localhost:5000
-npm run build    # Type-checks and compiles to /dist
-npm run lint     # Lint server TypeScript code
 ```
 
-### 3. Server Environment Variables
-
-Create a `server/.env` file based on `server/.env.example`:
-
-| Variable | Description | Default / Example | Required in Production |
+| Variable | Description | Development Default / Example | Required in Production |
 |---|---|---|---|
-| `PORT` | API server listen port | `5000` | No (defaults to 5000) |
-| `NODE_ENV` | Application environment (`development` / `production`) | `development` | Yes |
-| `CLIENT_URL` | Exact URL of the frontend client application | `http://localhost:5173` | **YES** |
-| `MONGODB_URI` | MongoDB Atlas or replica set connection string | `mongodb://...` | **YES** |
-| `JWT_SECRET` | Secret key for signing JSON Web Tokens | `your_secret_key` | **YES** |
-| `LLM_PROVIDER` | Active LLM inference provider (`openai` or `groq`) | `openai` | Yes |
-| `OPENAI_API_KEY` | OpenAI API key (required if `LLM_PROVIDER=openai`) | `sk-...` | Conditional |
-| `GROQ_API_KEY` | Groq API key (required if `LLM_PROVIDER=groq`) | `gsk_...` | Conditional |
-| `CLOUDINARY_*` | Cloudinary credentials for persistent cloud file uploads | `...` | Optional (local dev fallback) |
+| `PORT` | API HTTP port | `5000` | No (defaults to 5000) |
+| `NODE_ENV` | Runtime environment (`development` / `production`) | `development` | **YES** |
+| `CLIENT_URL` | Exact client origin for Express CORS whitelist | `http://localhost:5173` | **YES** (`https://<client-domain>`) |
+| `MONGODB_URI` | MongoDB connection URI (Atlas or local replica set) | `mongodb://localhost:27017/anchor_ai` | **YES** |
+| `JWT_SECRET` | 64+ char secret string for signing JWT tokens | `openssl rand -hex 64` | **YES** (no fallback string) |
+| `JWT_EXPIRES_IN` | Token duration | `7d` | No (defaults to 7d) |
+| `LLM_PROVIDER` | Active LLM inference provider (`openai` or `groq`) | `openai` | **YES** |
+| `OPENAI_API_KEY` | OpenAI API key | `sk-...` | **YES** if `LLM_PROVIDER=openai` |
+| `GROQ_API_KEY` | Groq API key | `gsk_...` | **YES** if `LLM_PROVIDER=groq` |
+| `GROQ_MODEL` | Groq model identifier | `llama-3.3-70b-versatile` | No (defaults to llama-3.3-70b) |
+| `CLOUDINARY_*` | Cloudinary credentials (`CLOUD_NAME`, `API_KEY`, `API_SECRET`) | *(empty for local `/uploads` fallback)* | Recommended in production |
 
 > [!CRITICAL]
 > **Production CORS Guard (`CLIENT_URL`):**
-> `CLIENT_URL` is configured as the CORS origin whitelist in Express. In production, this must be set to the exact deployed client origin (e.g. `https://anchor-ai.vercel.app` without trailing slash). **Omitting or misconfiguring `CLIENT_URL` will silently block all frontend cross-origin requests with CORS policy errors.**
+> `CLIENT_URL` must match your production client origin exactly (e.g. `https://anchor-ai.vercel.app`) without a trailing slash. If missing or misconfigured in production, all browser requests will be blocked by CORS policy.
+
+---
+
+### 2. Switching Between LLM Providers (OpenAI vs. Groq)
+
+AnchorAI provides a pluggable LLM architecture supporting both OpenAI and Groq for completions, quizzes, primers, and RAG question answering.
+
+#### Option A: Using OpenAI (Default)
+1. In `server/.env`, set:
+   ```env
+   LLM_PROVIDER=openai
+   OPENAI_API_KEY=sk-proj-...
+   ```
+2. **Behavior:**
+   - Text generation: Uses `gpt-4o-mini` with low temperature for strict factual adherence.
+   - Vector embeddings: Uses `text-embedding-3-small` (1536 dimensions) for semantic retrieval.
+   - OCR transcription: Tesseract.js runs locally first ($0 cost); if handwriting confidence is < 60%, automatically escalates to GPT-4o Vision.
+
+#### Option B: Using Groq (Ultra-Low Latency)
+1. In `server/.env`, set:
+   ```env
+   LLM_PROVIDER=groq
+   GROQ_API_KEY=gsk_...
+   GROQ_MODEL=llama-3.3-70b-versatile
+   ```
+2. **Behavior:**
+   - Text generation: Routes completions, quiz generation, and primer synthesis to Groq's LPUs for near-instant response times.
+   - Vector embeddings: Continues using `text-embedding-3-small` if `OPENAI_API_KEY` is present, or falls back gracefully to local embeddings.
+
+> [!NOTE]
+> **Fail-Fast Startup Guards:**
+> The server validates active LLM credentials on boot. If `LLM_PROVIDER=groq` is set without `GROQ_API_KEY`, or `LLM_PROVIDER=openai` without `OPENAI_API_KEY`, the server throws a fatal startup error and refuses to start.
+
+---
+
+### 3. Development vs. Production Run Instructions
+
+#### Development Workflow
+
+Run both client and server dev servers concurrently with hot-reloading:
+
+```bash
+# Terminal 1 — Backend API
+cd server
+npm install
+npm run dev      # Runs nodemon + ts-node at http://localhost:5000
+
+# Terminal 2 — Frontend Client
+cd client
+npm install
+npm run dev      # Runs Vite dev server at http://localhost:5173
+```
+
+#### Production Build & Run
+
+```bash
+# 1. Build and Run Server
+cd server
+npm install --omit=dev
+npm run build    # Compiles TypeScript to server/dist
+npm start        # Launches production Node server via node dist/server.js
+
+# 2. Build Client Assets
+cd client
+npm install
+npm run build    # Type-checks and bundles optimized production SPA in client/dist
+npm run preview  # (Optional) Locally test the production build at http://localhost:4173
+```
+
+#### Production Deployment Checklist
+1. Deploy `server/` to any Node 20+ runtime (Render, Railway, Fly.io, AWS ECS). Set `NODE_ENV=production`.
+2. Deploy `client/` to any static hosting service (Vercel, Cloudflare Pages, Netlify). Set `VITE_API_URL=https://<api-domain>/api`.
+3. Set `CLIENT_URL=https://<client-domain>` on the server environment so CORS allows the web app.
+4. Supply production `MONGODB_URI`, `JWT_SECRET`, Cloudinary credentials, and active LLM API keys.
 

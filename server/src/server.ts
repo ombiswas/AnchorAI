@@ -42,6 +42,16 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
+// Catch-all 404 handler for undefined routes (returns consistent JSON error shape)
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: {
+      message: `Route not found: ${req.method} ${req.originalUrl}`,
+      code: 'NOT_FOUND',
+    },
+  });
+});
+
 // Centralized Error Handling Middleware
 app.use(errorHandler);
 

@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import type { DeleteDocumentResponse, StudyDocument } from '../types/document.types';
 import type { QuizAttempt, QuizForTaking, QuizFull } from '../types/quiz.types';
+import { LibraryTabSkeleton } from '../components/TabSkeletons';
 
 interface DeleteToastInfo {
   id: string;
@@ -278,9 +279,12 @@ export const WorkspacePage: React.FC = () => {
           </div>
 
           {activeTab === 'library' ? (
-            <div className="space-y-8">
-              <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
-              <DocumentList
+            isLoadingDocs && documents.length === 0 ? (
+              <LibraryTabSkeleton />
+            ) : (
+              <div className="space-y-8">
+                <DocumentUploadZone onUploadSuccess={handleUploadSuccess} />
+                <DocumentList
                 documents={documents}
                 isLoading={isLoadingDocs}
                 onRefresh={fetchDocuments}
@@ -324,6 +328,7 @@ export const WorkspacePage: React.FC = () => {
                 }}
               />
             </div>
+            )
           ) : (
             <DashboardView
               key={dashboardRefreshTrigger}

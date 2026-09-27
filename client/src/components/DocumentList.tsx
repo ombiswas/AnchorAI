@@ -188,24 +188,72 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 
       {/* Document Items or Empty State */}
       {documents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex flex-col items-center justify-center p-8 sm:p-14 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 shadow-2xs text-zinc-900">
+            <svg className="h-7 w-7 text-zinc-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
               />
             </svg>
           </div>
-          <h3 className="mt-3.5 text-sm font-semibold text-neutral-900">
-            No documents uploaded yet
+          <span className="mt-4 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+            Get Started
+          </span>
+          <h3 className="mt-1 text-base sm:text-lg font-bold tracking-tight text-zinc-950">
+            Your study library is empty
           </h3>
-          <p className="mt-1 max-w-sm text-xs text-neutral-600 leading-normal">
-            Upload your syllabus or lecture slide PDFs, handwritten notes photos, or generate a
-            study primer from any topic above.
+          <p className="mt-1.5 max-w-md text-xs sm:text-sm text-zinc-600 leading-relaxed">
+            AnchorAI grounds all questions, citations, and quizzes directly in your course materials.
+            Upload lecture notes or synthesize an AI study primer to begin.
           </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('workspace-upload-dropzone') || document.getElementById('workspace-file-input');
+                el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (document.getElementById('workspace-file-input') as HTMLInputElement)?.click();
+              }}
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-zinc-950 px-4 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-zinc-800 shadow-2xs"
+            >
+              <svg className="h-4 w-4 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span>Upload Document</span>
+            </button>
+
+            {onOpenCreatePrimer && (
+              <button
+                type="button"
+                onClick={onOpenCreatePrimer}
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-teal-300 bg-teal-50 px-4 font-mono text-xs font-semibold uppercase tracking-wider text-teal-900 transition hover:bg-teal-100 shadow-2xs"
+              >
+                <svg className="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Synthesize Primer</span>
+              </button>
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[11px] text-zinc-400 font-mono">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+              PDF Documents & Slides
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+              Handwritten Photos (OCR)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+              Instant AI Primers
+            </span>
+          </div>
         </div>
       ) : (
         <div className="divide-y divide-neutral-100">
