@@ -1,8 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { Types } from 'mongoose';
 import { config } from '../config';
+import { ChunkModel } from '../models/chunk.model';
+import { DocumentModel } from '../models/document.model';
+import { QuizModel } from '../models/quiz.model';
+import { QuizAttemptModel } from '../models/quizAttempt.model';
+import { TopicMasteryModel } from '../models/topicMastery.model';
 import { IUser, User } from '../models/user.model';
-import { ConflictError, UnauthorizedError, ValidationError } from '../utils/errors';
+import { ConflictError, NotFoundError, UnauthorizedError, ValidationError } from '../utils/errors';
 import { LoginInput, SignupInput, loginSchema, signupSchema } from '../validations/auth.validation';
 
 export interface AuthResponse {
@@ -135,6 +141,30 @@ export class AuthService {
       email: user.email,
       createdAt: user.createdAt,
     };
+  }
+
+  /**
+   * Deletes a user account and purges all associated documents, vector chunks,
+   * quizzes, attempts, and topic mastery analytics.
+   */
+  public async deleteAccount(userId: string): Promise<void> {
+    const userObjectId = new Types.ObjectId(userId);
+    const user = await User.findById(userObjectId);
+    if (!user) {
+      throw new NotFoundError('User not found or session expired');
+    }
+
+    // Cascade purge all records belonging to this user
+    await Promise.all([
+      ChunkModel.deleteMany({ userId: userObjectId }),
+      DocumentModel.deleteMany({ userId: userObjectId }),
+      QuizAttemptModel.deleteMany({ userId: userObjectId }),
+      QuizModel.deleteMany({ userId: userObjectId }),
+      TopicMasteryModel.deleteMany({ userId: userObjectId }),
+      User.deleteOne({ _id: userObjectId }),
+    ]);
+
+    console.log(`[auth] Successfully deleted account and all data for user ${userId}`);
   }
 }
 

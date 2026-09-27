@@ -16,7 +16,7 @@ const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('home');
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#ffffff] text-neutral-900 selection:bg-neutral-900 selection:text-white">
+    <div className="flex min-h-screen flex-col bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white">
       {/* Top Navigation */}
       <Navbar currentView={currentView} onNavigate={setCurrentView} />
 
@@ -26,8 +26,6 @@ const AppContent: React.FC = () => {
           <LandingHero
             onNavigateToSignup={() => setCurrentView('signup')}
             onNavigateToWorkspace={() => setCurrentView('workspace')}
-            onNavigateToPrivacy={() => setCurrentView('privacy')}
-            onNavigateToLicense={() => setCurrentView('license')}
           />
         )}
 
@@ -62,7 +60,7 @@ const AppContent: React.FC = () => {
 
       {/* Structured Comprehensive Footer (hidden in workspace view for a clean native app chat experience) */}
       {currentView !== 'workspace' && (
-        <Footer onNavigate={setCurrentView} />
+        <Footer onNavigate={setCurrentView} showPrivacyGuarantee={currentView === 'home'} />
       )}
     </div>
   );

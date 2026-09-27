@@ -4,15 +4,11 @@ import { useAuth } from '../hooks/useAuth';
 interface LandingHeroProps {
   onNavigateToSignup: () => void;
   onNavigateToWorkspace: () => void;
-  onNavigateToPrivacy?: () => void;
-  onNavigateToLicense?: () => void;
 }
 
 export const LandingHero: React.FC<LandingHeroProps> = ({
   onNavigateToSignup,
   onNavigateToWorkspace,
-  onNavigateToPrivacy,
-  onNavigateToLicense,
 }) => {
   const { isAuthenticated } = useAuth();
   const [activeDemoTab, setActiveDemoTab] = useState<'chat' | 'quiz'>('chat');
@@ -36,7 +32,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         {/* Ambient Gradient Glows */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full opacity-20 blur-3xl"
+          className="pointer-events-none absolute -left-24 top-24 sm:top-28 h-96 w-96 rounded-full opacity-20 blur-3xl"
           style={{
             background: 'radial-gradient(circle, #3b82f6 0%, #6366f1 50%, transparent 100%)',
           }}
@@ -50,14 +46,13 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         />
 
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-          {/* Eyebrow Pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-neutral-700/80 bg-neutral-900/80 px-3.5 py-1 text-xs font-mono text-[#bdbbff] shadow-sm backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-semibold uppercase tracking-wider text-[11px]">
-              AnchorAI Platform · Production v1.0
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2.5 rounded-md border border-neutral-800 bg-neutral-900/90 px-3 py-1 font-mono text-xs">
+            <span className="font-semibold uppercase tracking-wider text-[11px] text-[#bdbbff]">
+              AnchorAI Platform
             </span>
-            <span className="text-neutral-500">·</span>
-            <span className="text-neutral-300">Grounded In Course Notes</span>
+            <span className="text-neutral-600">/</span>
+            <span className="text-neutral-400 text-[11px]">Grounded In Course Notes</span>
           </div>
 
           {/* Main Headline */}
@@ -282,7 +277,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       </section>
 
       {/* 2. STATS & ARCHITECTURAL HIGHLIGHTS */}
-      <section className="border-y border-neutral-200 bg-neutral-50/60 py-8">
+      <section className="border-y border-neutral-200 bg-neutral-50 py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             <div>
@@ -326,7 +321,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       </section>
 
       {/* 3. FOUR CORE CAPABILITIES (DEEP DIVE) */}
-      <section className="py-20 sm:py-24">
+      <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="max-w-2xl">
             <span className="font-mono text-xs font-bold uppercase tracking-widest text-indigo-700">
@@ -463,47 +458,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         </div>
       </section>
 
-      {/* 5. PRIVACY & ACADEMIC INTEGRITY PLEDGE */}
-      <section className="py-16 sm:py-20 bg-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <div className="rounded-2xl border border-neutral-300 bg-neutral-900 p-8 sm:p-12 text-white shadow-xl">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="max-w-xl">
-                <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
-                  Student Privacy & Security Guarantee
-                </span>
-                <h3 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                  Your notes belong to you. Not to AI training sets.
-                </h3>
-                <p className="mt-3 text-xs sm:text-sm text-neutral-300 leading-relaxed font-body">
-                  We enforce zero-retention agreements with AI inference gateways. When you delete a document from your library, all associated chunks, text, and vector embeddings are permanently wiped from MongoDB Atlas.
-                </p>
-              </div>
 
-              <div className="flex flex-col gap-2.5 sm:shrink-0">
-                {onNavigateToPrivacy && (
-                  <button
-                    onClick={onNavigateToPrivacy}
-                    className="btn-press rounded-md bg-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950 hover:bg-neutral-100 shadow-sm"
-                  >
-                    Read Privacy Policy &rarr;
-                  </button>
-                )}
-                {onNavigateToLicense && (
-                  <button
-                    onClick={onNavigateToLicense}
-                    className="btn-press rounded-md border border-neutral-700 bg-neutral-800/80 px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-neutral-300 hover:bg-neutral-800"
-                  >
-                    View MIT License
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. BOTTOM CALL TO ACTION */}
+      {/* 5. BOTTOM CALL TO ACTION */}
       <section className="border-t border-neutral-200 bg-neutral-50/50 py-16 text-center">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-neutral-950">

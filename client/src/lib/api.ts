@@ -74,6 +74,12 @@ class ApiClient {
         method: 'GET',
       });
     },
+
+    deleteAccount: async (): Promise<{ message: string }> => {
+      return this.request<{ message: string }>('/auth/account', {
+        method: 'DELETE',
+      });
+    },
   };
 
   public readonly documents = {

@@ -38,6 +38,24 @@ export class AuthController {
       next(error);
     }
   }
+
+  /**
+   * DELETE /api/auth/account
+   */
+  public async deleteAccount(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      await authService.deleteAccount(req.userId as string);
+      res.status(200).json({
+        message: 'User account and all associated study materials deleted successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const authController = new AuthController();
