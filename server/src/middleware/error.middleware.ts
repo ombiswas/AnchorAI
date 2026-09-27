@@ -44,6 +44,17 @@ export const errorHandler = (
     return;
   }
 
+  // Handle Mongoose CastError (e.g. malformed ObjectId) & BSONError
+  if (err.name === 'CastError' || err.name === 'BSONError') {
+    res.status(400).json({
+      error: {
+        message: 'Invalid document ID format',
+        code: 'VALIDATION_ERROR',
+      },
+    });
+    return;
+  }
+
   console.error('[Unhandled Error]', err);
 
   // Fallback for internal server errors

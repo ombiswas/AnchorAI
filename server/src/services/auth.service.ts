@@ -154,7 +154,10 @@ export class AuthService {
       throw new NotFoundError('User not found or session expired');
     }
 
-    // Cascade purge all records belonging to this user
+    // 1. Immediately mark all documents as deleted to abort in-flight async background tasks (OCR/extraction/primers)
+    await DocumentModel.updateMany({ userId: userObjectId }, { $set: { isDeleted: true } });
+
+    // 2. Cascade purge all records belonging to this user
     await Promise.all([
       ChunkModel.deleteMany({ userId: userObjectId }),
       DocumentModel.deleteMany({ userId: userObjectId }),

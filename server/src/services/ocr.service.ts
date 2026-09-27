@@ -46,8 +46,9 @@ export class OcrService {
       console.log(`[ocr] Starting OCR processing for image document ${documentId}`);
 
       const doc = await DocumentModel.findById(documentId);
-      if (!doc) {
-        throw new Error(`Document ${documentId} not found in database`);
+      if (!doc || doc.isDeleted) {
+        console.warn(`[ocr] Aborting image OCR: Document ${documentId} not found or marked deleted.`);
+        return;
       }
 
       // Step 1: Execute primary local OCR with Tesseract.js
@@ -128,10 +129,13 @@ export class OcrService {
       const errorMessage = (error as Error).message || 'Failed to perform OCR on image document';
       console.error(`[ocr] Image ingestion failed for doc ${documentId}: ${errorMessage}`);
 
-      await DocumentModel.findByIdAndUpdate(documentId, {
-        status: 'failed',
-        errorReason: errorMessage,
-      });
+      const docCheck = await DocumentModel.findById(documentId).select('isDeleted').lean();
+      if (docCheck && !docCheck.isDeleted) {
+        await DocumentModel.findByIdAndUpdate(documentId, {
+          status: 'failed',
+          errorReason: errorMessage,
+        });
+      }
     }
   }
 

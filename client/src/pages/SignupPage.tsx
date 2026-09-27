@@ -28,8 +28,12 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
       setFormError('Please enter a valid email address');
       return;
     }
-    if (!password || password.length < 6) {
-      setFormError('Password must be at least 6 characters');
+    if (!password || password.length < 8) {
+      setFormError('Password must be at least 8 characters');
+      return;
+    }
+    if (!/\d/.test(password)) {
+      setFormError('Password must contain at least one number');
       return;
     }
     if (password !== confirmPassword) {
@@ -159,7 +163,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
                 htmlFor="password"
                 className="block font-mono text-[12px] font-medium uppercase tracking-wider text-zinc-600"
               >
-                Password (min. 6 characters)
+                Password (min. 8 characters, 1 number)
               </label>
               <input
                 id="password"

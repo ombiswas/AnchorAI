@@ -23,8 +23,9 @@ export class ExtractionService {
       console.log(`[extraction] Starting PDF extraction & ingestion for document ${documentId}`);
 
       const doc = await DocumentModel.findById(documentId);
-      if (!doc) {
-        throw new Error(`Document ${documentId} not found in database`);
+      if (!doc || doc.isDeleted) {
+        console.warn(`[extraction] Aborting PDF extraction: Document ${documentId} not found or marked deleted.`);
+        return;
       }
 
       // 1. Extract raw text via modern PDFParse class
@@ -47,10 +48,13 @@ export class ExtractionService {
       const errorMessage = (error as Error).message || 'Failed to extract text from PDF document';
       console.error(`[ingestion] Failed processing PDF document ${documentId}: ${errorMessage}`);
 
-      await DocumentModel.findByIdAndUpdate(documentId, {
-        status: 'failed',
-        errorReason: errorMessage,
-      });
+      const docCheck = await DocumentModel.findById(documentId).select('isDeleted').lean();
+      if (docCheck && !docCheck.isDeleted) {
+        await DocumentModel.findByIdAndUpdate(documentId, {
+          status: 'failed',
+          errorReason: errorMessage,
+        });
+      }
     }
   }
 
@@ -66,6 +70,8 @@ export class ExtractionService {
    * 3. DRY Reuse Across All Sources: Exactly identical chunking (400 tokens / 50 overlap), embedding,
    *    and storage logic is utilized for PDF uploads, Image OCR transcriptions, AI Primers,
    *    and study guide section appends.
+   * 4. Soft-delete abort guard: Re-checks parent document's isDeleted status right before writing
+   *    chunks so that async background tasks never write orphaned chunks if document/account was deleted.
    */
   public async ingestExtractedText(
     documentId: string | Types.ObjectId,
@@ -74,8 +80,9 @@ export class ExtractionService {
     extraUpdates: ExtraIngestionUpdates = {}
   ): Promise<void> {
     const doc = await DocumentModel.findById(documentId);
-    if (!doc) {
-      throw new Error(`Document ${documentId} not found in database`);
+    if (!doc || doc.isDeleted) {
+      console.warn(`[ingestion] Document ${documentId} not found or marked deleted. Aborting chunk ingestion.`);
+      return;
     }
 
     // 1. Clean extracted text using heuristic cleaner
@@ -98,6 +105,15 @@ export class ExtractionService {
     // 3. Generate vector embeddings in batches via OpenAI text-embedding-3-small
     const chunkTexts = tokenChunks.map((c) => c.text);
     const { embeddings, totalTokens } = await embeddingService.generateBatchEmbeddings(chunkTexts);
+
+    // Guard: Verify parent document has not been deleted mid-processing before writing chunks
+    const freshDoc = await DocumentModel.findById(documentId).select('isDeleted').lean();
+    if (!freshDoc || freshDoc.isDeleted) {
+      console.warn(
+        `[ingestion] Aborting chunk write: Document ${documentId} was deleted mid-processing.`
+      );
+      return;
+    }
 
     // 4. Assemble new chunk documents with embeddings
     const chunkDocuments = tokenChunks.map((chunk, index) => ({
@@ -136,16 +152,19 @@ export class ExtractionService {
       throw swapError;
     }
 
-    // 7. Update Document status to ready with chunk count, token usage, and timestamps
-    await DocumentModel.findByIdAndUpdate(documentId, {
-      status: 'ready',
-      extractedText: cleaned,
-      chunkCount: tokenChunks.length,
-      totalTokensUsed: (doc.totalTokensUsed || 0) + totalTokens,
-      errorReason: undefined,
-      updatedAt: extraUpdates.updatedAt || new Date(),
-      ...extraUpdates,
-    });
+    // 7. Update Document status to ready with chunk count, token usage, and timestamps (only if not deleted)
+    await DocumentModel.findOneAndUpdate(
+      { _id: documentId, isDeleted: false },
+      {
+        status: 'ready',
+        extractedText: cleaned,
+        chunkCount: tokenChunks.length,
+        totalTokensUsed: (doc.totalTokensUsed || 0) + totalTokens,
+        errorReason: undefined,
+        updatedAt: extraUpdates.updatedAt || new Date(),
+        ...extraUpdates,
+      }
+    );
 
     console.log(
       `[ingestion] Complete for document ${documentId}: ${tokenChunks.length} chunks stored, ${totalTokens} tokens used`

@@ -10,6 +10,7 @@ export interface IDocument extends Document {
   fileType: DocumentFileType;
   fileUrl: string;
   status: DocumentStatus;
+  isDeleted: boolean;
   chunkCount: number;
   totalTokensUsed?: number;
   extractedText?: string;
@@ -55,6 +56,11 @@ const documentSchema = new Schema<IDocument>(
       type: String,
       enum: ['processing', 'ready', 'failed'],
       default: 'processing',
+      index: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
       index: true,
     },
     chunkCount: {

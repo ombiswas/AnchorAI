@@ -107,6 +107,7 @@ export class RagService {
     const doc = await DocumentModel.findOne({
       _id: new Types.ObjectId(documentId),
       userId: new Types.ObjectId(userId),
+      isDeleted: { $ne: true },
     });
 
     if (!doc) {

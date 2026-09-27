@@ -143,6 +143,12 @@ export class DocumentService {
     // 2. Run LLM generation and vectorization asynchronously without blocking HTTP response
     setImmediate(async () => {
       try {
+        const initialCheck = await DocumentModel.findById(doc._id).select('isDeleted').lean();
+        if (!initialCheck || initialCheck.isDeleted) {
+          console.warn(`[primer] Aborting primer generation: Document ${doc._id} not found or marked deleted.`);
+          return;
+        }
+
         const systemPrompt = `You are an elite university professor and curriculum author.
 Your task is to generate a comprehensive, highly structured academic study primer for students.
 Structure your notes with clear Markdown headings (##), bullet points, and code/formula blocks:
@@ -192,10 +198,13 @@ Rules:
         await extractionService.ingestExtractedText(doc._id, primerText, 1);
       } catch (err) {
         console.error(`[primer] Generation/ingestion failed for document ${doc._id}:`, err);
-        await DocumentModel.findByIdAndUpdate(doc._id, {
-          status: 'failed',
-          errorReason: (err as Error).message || 'Study primer generation failed.',
-        });
+        const docCheck = await DocumentModel.findById(doc._id).select('isDeleted').lean();
+        if (docCheck && !docCheck.isDeleted) {
+          await DocumentModel.findByIdAndUpdate(doc._id, {
+            status: 'failed',
+            errorReason: (err as Error).message || 'Study primer generation failed.',
+          });
+        }
       }
     });
 
@@ -206,7 +215,10 @@ Rules:
    * Lists all documents belonging to a user, sorted by most recent first.
    */
   public async getUserDocuments(userId: string): Promise<IDocument[]> {
-    return DocumentModel.find({ userId: new Types.ObjectId(userId) })
+    return DocumentModel.find({
+      userId: new Types.ObjectId(userId),
+      isDeleted: { $ne: true },
+    })
       .select('-extractedText')
       .sort({ createdAt: -1 })
       .exec();
@@ -223,6 +235,7 @@ Rules:
     const doc = await DocumentModel.findOne({
       _id: new Types.ObjectId(documentId),
       userId: new Types.ObjectId(userId),
+      isDeleted: { $ne: true },
     }).exec();
 
     if (!doc) {
@@ -267,6 +280,7 @@ Rules:
     const doc = await DocumentModel.findOne({
       _id: new Types.ObjectId(documentId),
       userId: new Types.ObjectId(userId),
+      isDeleted: { $ne: true },
     })
       .select('+extractedText')
       .exec();
@@ -346,15 +360,19 @@ Rules:
     const userObjectId = new Types.ObjectId(userId);
     const docObjectId = new Types.ObjectId(documentId);
 
-    // Ownership check: Verify document belongs to the requesting user
+    // Ownership check: Verify document belongs to the requesting user and is not already deleted
     const doc = await DocumentModel.findOne({
       _id: docObjectId,
       userId: userObjectId,
+      isDeleted: { $ne: true },
     });
 
     if (!doc) {
       throw new NotFoundError('Document not found or access denied');
     }
+
+    // Immediately flag document as deleted to abort any in-flight background processing tasks
+    await DocumentModel.findByIdAndUpdate(docObjectId, { $set: { isDeleted: true } });
 
     // Branch 1: History preserved (opt-out of cascade)
     if (preserveHistory) {

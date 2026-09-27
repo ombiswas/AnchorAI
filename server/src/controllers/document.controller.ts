@@ -134,11 +134,9 @@ export class DocumentController {
   ): Promise<void> {
     try {
       const preserveHistoryParam = req.query.preserveHistory;
-      const preserveHistoryBody = req.body?.preserveHistory;
       const preserveHistory =
         preserveHistoryParam === 'true' ||
-        preserveHistoryParam === '1' ||
-        preserveHistoryBody === true;
+        preserveHistoryParam === '1';
 
       const result = await documentService.deleteDocument(
         req.userId as string,

@@ -9,8 +9,9 @@ export const signupSchema = z.object({
   email: z.string().trim().email({ message: 'Invalid email address' }).toLowerCase(),
   password: z
     .string()
-    .min(6, { message: 'Password must be at least 6 characters' })
-    .max(100, { message: 'Password is too long' }),
+    .min(8, { message: 'Password must be at least 8 characters' })
+    .max(100, { message: 'Password is too long' })
+    .regex(/\d/, { message: 'Password must contain at least one number' }),
 });
 
 export const loginSchema = z.object({

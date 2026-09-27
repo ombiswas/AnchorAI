@@ -43,6 +43,11 @@ export class QuizService {
       throw new ValidationError('At least one document ID must be provided to generate a quiz');
     }
 
+    const invalidId = documentIds.find((id) => !Types.ObjectId.isValid(id));
+    if (invalidId) {
+      throw new ValidationError(`Invalid document ID format: ${invalidId}`);
+    }
+
     const validCount = Math.min(Math.max(questionCount, 1), 15);
     const objectIds = documentIds.map((id) => new Types.ObjectId(id));
 
@@ -51,6 +56,7 @@ export class QuizService {
       _id: { $in: objectIds },
       userId: new Types.ObjectId(userId),
       status: 'ready',
+      isDeleted: { $ne: true },
     }).exec();
 
     if (documents.length === 0) {
@@ -463,6 +469,7 @@ Do not include any conversational filler, markdown commentary, or text outside t
       const readyDocs = await DocumentModel.find({
         userId: new Types.ObjectId(userId),
         status: 'ready',
+        isDeleted: { $ne: true },
       })
         .select('_id')
         .limit(6)
