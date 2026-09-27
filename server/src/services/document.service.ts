@@ -297,6 +297,41 @@ Rules:
 
     return updatedDoc;
   }
+
+  /**
+   * Deletes a study document and cascades deletion to all its vector chunks.
+   *
+   * Architectural Decisions Explained:
+   * 1. Strict Ownership Enforcement: Verifies documentId belongs to the requesting userId before
+   *    executing any mutation.
+   * 2. Cascading Vector Chunk Cleanup: Removes all corresponding chunks in ChunkModel associated with
+   *    this documentId. This prevents orphaned vector embeddings from consuming database storage
+   *    or creating phantom results in vector similarity queries.
+   */
+  public async deleteDocument(userId: string, documentId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(documentId)) {
+      throw new ValidationError('Invalid document ID format');
+    }
+
+    const doc = await DocumentModel.findOne({
+      _id: new Types.ObjectId(documentId),
+      userId: new Types.ObjectId(userId),
+    });
+
+    if (!doc) {
+      throw new NotFoundError('Document not found or access denied');
+    }
+
+    // 1. Cascade delete all vector chunks belonging to this document
+    const chunkDeleteResult = await ChunkModel.deleteMany({ documentId: doc._id });
+    console.log(
+      `[document] Cascade deleted ${chunkDeleteResult.deletedCount} chunks for document ${documentId}`
+    );
+
+    // 2. Delete the document itself
+    await DocumentModel.deleteOne({ _id: doc._id });
+    console.log(`[document] Successfully deleted document ${documentId} (userId: ${userId})`);
+  }
 }
 
 export const documentService = new DocumentService();

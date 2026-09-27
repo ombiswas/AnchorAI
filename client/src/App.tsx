@@ -18,7 +18,7 @@ const AppContent: React.FC = () => {
       <Navbar currentView={currentView} onNavigate={setCurrentView} />
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         {currentView === 'home' && (
           <LandingHero
             onNavigateToSignup={() => setCurrentView('signup')}
@@ -47,17 +47,19 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Minimalistic Wordmark Footer */}
-      <footer className="border-t border-neutral-200/80 bg-white py-12 text-center">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
-            AnchorAI · AI-Native Study Platform
-          </p>
-          <div className="mt-4 font-mono text-[56px] font-bold tracking-tighter text-neutral-100 sm:text-[90px]">
-            ANCHOR.AI
+      {/* Minimalistic Wordmark Footer (hidden in workspace view for a clean native app chat experience) */}
+      {currentView !== 'workspace' && (
+        <footer className="border-t border-neutral-200/80 bg-white py-12 text-center">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
+              AnchorAI · AI-Native Study Platform
+            </p>
+            <div className="mt-4 font-mono text-[56px] font-bold tracking-tighter text-neutral-100 sm:text-[90px]">
+              ANCHOR.AI
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 };

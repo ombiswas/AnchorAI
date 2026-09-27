@@ -121,6 +121,28 @@ export class DocumentController {
       next(error);
     }
   }
+
+  /**
+   * DELETE /api/documents/:id
+   * Removes a document and cascades deletion to all associated chunks.
+   */
+  public async delete(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      await documentService.deleteDocument(
+        req.userId as string,
+        req.params.id as string
+      );
+      res.status(200).json({
+        message: 'Document and vector chunks deleted successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const documentController = new DocumentController();

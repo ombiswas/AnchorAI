@@ -114,6 +114,12 @@ class ApiClient {
       );
     },
 
+    delete: async (id: string): Promise<{ message: string }> => {
+      return this.request<{ message: string }>(`/documents/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
     upload: async (
       file: File,
       title?: string,

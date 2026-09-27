@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { api } from '../lib/api';
 import type { StudyDocument } from '../types/document.types';
 
 interface DocumentListProps {
@@ -9,6 +10,7 @@ interface DocumentListProps {
   onSelectQuizDocument?: (doc: StudyDocument) => void;
   onOpenQuizGenerator?: () => void;
   onOpenCreatePrimer?: () => void;
+  onDeleteDocument?: (docId: string) => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -19,8 +21,12 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onSelectQuizDocument,
   onOpenQuizGenerator,
   onOpenCreatePrimer,
+  onDeleteDocument,
 }) => {
   const [selectedDocForError, setSelectedDocForError] = useState<StudyDocument | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<StudyDocument | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Auto-poll if any document is currently in 'processing' status
   useEffect(() => {
@@ -44,6 +50,21 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       });
     } catch {
       return dateString;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!documentToDelete || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.documents.delete(documentToDelete._id);
+      onDeleteDocument?.(documentToDelete._id);
+      setDocumentToDelete(null);
+    } catch (err) {
+      setDeleteError((err as Error).message || 'Failed to delete document from study library');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -234,14 +255,39 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 {/* Status Badge & Actions */}
                 <div className="flex items-center gap-3">
                   {doc.status === 'processing' && (
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
-                      <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
-                      {isPrimer
-                        ? 'Synthesizing Primer...'
-                        : isImage
-                          ? 'Transcribing OCR...'
-                          : 'Extracting Text...'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
+                        <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
+                        {isPrimer
+                          ? 'Synthesizing Primer...'
+                          : isImage
+                            ? 'Transcribing OCR...'
+                            : 'Extracting Text...'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDocumentToDelete(doc);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 shadow-2xs"
+                        title="Delete from study library"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.8}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   )}
 
                   {doc.status === 'ready' && (
@@ -276,29 +322,77 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           <span>&rarr;</span>
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDocumentToDelete(doc);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 shadow-2xs"
+                        title="Delete from study library"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.8}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   )}
 
                   {doc.status === 'failed' && (
-                    <button
-                      onClick={() => setSelectedDocForError(doc)}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-red-900 hover:bg-red-100"
-                    >
-                      <svg
-                        className="h-3.5 w-3.5 text-red-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedDocForError(doc)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-red-900 hover:bg-red-100"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      Failed (View Error)
-                    </button>
+                        <svg
+                          className="h-3.5 w-3.5 text-red-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Failed (View Error)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDocumentToDelete(doc);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 shadow-2xs"
+                        title="Delete from study library"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.8}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -326,6 +420,70 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 className="rounded-md bg-neutral-950 px-4 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-neutral-800"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {documentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-6 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-700">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </div>
+              <div>
+                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-red-600">
+                  Delete Confirmation
+                </span>
+                <h3 className="text-base font-semibold text-neutral-950">
+                  Delete from Study Library?
+                </h3>
+              </div>
+            </div>
+
+            <p className="mt-3 text-sm text-neutral-600 leading-relaxed">
+              Are you sure you want to delete <strong className="text-neutral-900 font-semibold">{documentToDelete.title}</strong>? All associated study notes, chat context, and vector embeddings will be permanently removed.
+            </p>
+
+            {deleteError && (
+              <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-2.5 text-xs text-red-900">
+                <strong>Error:</strong> {deleteError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDocumentToDelete(null)}
+                disabled={isDeleting}
+                className="rounded-md border border-neutral-300 bg-white px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-red-700 disabled:opacity-50 shadow-sm"
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete</span>
+                )}
               </button>
             </div>
           </div>

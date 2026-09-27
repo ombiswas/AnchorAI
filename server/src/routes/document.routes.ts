@@ -14,5 +14,6 @@ router.post('/primer', primerRateLimiter, documentController.createPrimer);
 router.post('/:id/append', documentController.appendSection);
 router.get('/', documentController.list);
 router.get('/:id', documentController.getById);
+router.delete('/:id', documentController.delete);
 
 export default router;

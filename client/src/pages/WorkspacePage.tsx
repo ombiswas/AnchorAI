@@ -85,9 +85,15 @@ export const WorkspacePage: React.FC = () => {
   const failedCount = documents.filter((d) => d.status === 'failed').length;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      {/* Top Banner (hidden during active quiz to maximize focus) */}
-      {!activeQuiz && !quizResult && (
+    <div
+      className={`mx-auto w-full ${
+        activeChatDoc
+          ? 'h-[calc(100vh-62px)] max-w-5xl px-3 sm:px-6 py-3 flex flex-col flex-1 min-h-0'
+          : 'max-w-5xl px-4 py-8 sm:px-6'
+      }`}
+    >
+      {/* Top Banner (hidden during active chat or active quiz to maximize focus) */}
+      {!activeQuiz && !quizResult && !activeChatDoc && (
         <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -193,16 +199,18 @@ export const WorkspacePage: React.FC = () => {
           onBackToLibrary={() => setQuizResult(null)}
         />
       ) : activeChatDoc ? (
-        <DocumentChat
-          document={activeChatDoc}
-          onBackToLibrary={() => setActiveChatDoc(null)}
-          onDocumentUpdated={(updatedDoc) => {
-            setDocuments((prev) =>
-              prev.map((d) => (d._id === updatedDoc._id ? updatedDoc : d))
-            );
-            setActiveChatDoc(updatedDoc);
-          }}
-        />
+        <div className="flex-1 min-h-0 flex flex-col h-full">
+          <DocumentChat
+            document={activeChatDoc}
+            onBackToLibrary={() => setActiveChatDoc(null)}
+            onDocumentUpdated={(updatedDoc) => {
+              setDocuments((prev) =>
+                prev.map((d) => (d._id === updatedDoc._id ? updatedDoc : d))
+              );
+              setActiveChatDoc(updatedDoc);
+            }}
+          />
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Navigation Tabs */}
@@ -245,6 +253,9 @@ export const WorkspacePage: React.FC = () => {
                 onSelectQuizDocument={(doc) => handleOpenGenerator(doc._id)}
                 onOpenQuizGenerator={() => handleOpenGenerator()}
                 onOpenCreatePrimer={() => setIsPrimerModalOpen(true)}
+                onDeleteDocument={(docId) => {
+                  setDocuments((prev) => prev.filter((d) => d._id !== docId));
+                }}
               />
             </div>
           ) : (
