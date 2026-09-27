@@ -2,6 +2,29 @@ import rateLimit from 'express-rate-limit';
 import { AuthenticatedRequest } from './auth.middleware';
 
 /**
+ * Rate limiter for unauthenticated auth endpoints (POST /signup, POST /login).
+ * Limits each IP address to 10 requests per 15-minute window to prevent
+ * brute-force password attacks and signup flooding. Keyed by IP because no
+ * JWT exists yet at this point in the request lifecycle.
+ */
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+  handler: (_req, res) => {
+    res.status(429).json({
+      error: {
+        message:
+          'Too many attempts from this IP. Please wait 15 minutes before trying again.',
+        code: 'RATE_LIMIT_EXCEEDED',
+      },
+    });
+  },
+});
+
+/**
  * Rate limiter middleware for RAG chat endpoints.
  * Limits users to 30 questions per 15-minute window to prevent API credit exhaustion.
  */

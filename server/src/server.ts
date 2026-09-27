@@ -1,4 +1,5 @@
 import cors from 'cors';
+import helmet from 'helmet';
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { connectDB } from './config/db';
@@ -16,13 +17,14 @@ const app = express();
 connectDB();
 
 // Middleware
+app.use(helmet());
 app.use(
   cors({
     origin: config.clientUrl,
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Serve local uploads folder statically for dev fallback
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
