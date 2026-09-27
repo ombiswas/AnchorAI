@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { uploadFileBuffer } from '../config/cloudinary';
+import { ChunkModel } from '../models/chunk.model';
 import { DocumentModel, IDocument } from '../models/document.model';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { extractionService } from './extraction.service';
@@ -214,6 +215,87 @@ Rules:
     }
 
     return doc;
+  }
+
+  /**
+   * Appends an AI-generated general knowledge concept to an existing study document/guide.
+   *
+   * Architectural Decisions Explained:
+   * 1. Ownership & Boundary Check: Only the authenticated document owner can append to their document.
+   * 2. Full Document Re-indexing: Rather than trying to surgically insert or re-embed a single chunk
+   *    (which would cause semantic fragmentation and chunk boundary misalignment), the full document text
+   *    is updated and re-processed through the Phase 1c pipeline.
+   * 3. Idempotent Duplicate Guard: Checks if the trimmed text already exists in the document text to prevent
+   *    students accidentally double-clicking or duplicate-appending the same explanation.
+   * 4. Atomic Replacement & Rollback: Relies on `extractionService.ingestExtractedText` which snapshots
+   *    existing chunks and ensures zero loss if an embedding API error occurs.
+   */
+  public async appendSection(
+    userId: string,
+    documentId: string,
+    text: string
+  ): Promise<IDocument> {
+    if (!Types.ObjectId.isValid(documentId)) {
+      throw new ValidationError('Invalid document ID format');
+    }
+
+    const trimmedText = text?.trim();
+    if (!trimmedText) {
+      throw new ValidationError('Text to append cannot be empty.');
+    }
+
+    if (trimmedText.length > 50000) {
+      throw new ValidationError('Text to append exceeds 50,000 characters limit.');
+    }
+
+    // 1. Verify document exists and belongs to the current user, fetching full extractedText
+    const doc = await DocumentModel.findOne({
+      _id: new Types.ObjectId(documentId),
+      userId: new Types.ObjectId(userId),
+    })
+      .select('+extractedText')
+      .exec();
+
+    if (!doc) {
+      throw new NotFoundError('Document not found or access denied');
+    }
+
+    if (doc.status !== 'ready') {
+      throw new ValidationError(
+        `Cannot append to document while status is '${doc.status}'. Document must be 'ready'.`
+      );
+    }
+
+    // 2. Retrieve existing source text or reconstruct from chunks if missing
+    let currentText = doc.extractedText?.trim() || '';
+    if (!currentText) {
+      const existingChunks = await ChunkModel.find({ documentId: doc._id })
+        .sort({ 'metadata.chunkIndex': 1 })
+        .lean()
+        .exec();
+      currentText = existingChunks.map((c) => c.text).join('\n\n');
+    }
+
+    // 3. Simple duplicate guard: check if this text has already been appended
+    if (currentText.includes(trimmedText)) {
+      throw new ValidationError('This explanation has already been appended to this study guide.');
+    }
+
+    // 4. Format supplementary section with Markdown headers for chunk alignment
+    const updatedText = `${currentText}\n\n---\n\n## Supplementary Study Guide Note\n\n${trimmedText}\n`;
+
+    // 5. Re-run Phase 1c chunking + embedding pipeline against the entire updated text
+    await extractionService.ingestExtractedText(doc._id, updatedText, 1, {
+      updatedAt: new Date(),
+    });
+
+    // 6. Return the refreshed document
+    const updatedDoc = await DocumentModel.findById(doc._id).exec();
+    if (!updatedDoc) {
+      throw new NotFoundError('Failed to retrieve updated document');
+    }
+
+    return updatedDoc;
   }
 }
 

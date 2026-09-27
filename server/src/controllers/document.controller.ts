@@ -1,6 +1,15 @@
 import { NextFunction, Response } from 'express';
+import { z } from 'zod';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { documentService } from '../services/document.service';
+
+const appendSectionSchema = z.object({
+  text: z
+    .string()
+    .trim()
+    .min(1, { message: 'Text to append cannot be empty' })
+    .max(50000, { message: 'Text cannot exceed 50,000 characters' }),
+});
 
 export class DocumentController {
   /**
@@ -68,6 +77,46 @@ export class DocumentController {
         req.params.id as string
       );
       res.status(200).json({ document });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/documents/:id/append
+   * Appends an AI general knowledge explanation to the document and re-indexes chunks.
+   */
+  public async appendSection(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const parseResult = appendSectionSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const issue = parseResult.error.issues[0];
+        res.status(400).json({
+          error: {
+            message: issue ? issue.message : 'Invalid request payload',
+            code: 'VALIDATION_ERROR',
+          },
+        });
+        return;
+      }
+
+      const { text } = parseResult.data;
+      const documentId = req.params.id as string;
+
+      const updatedDoc = await documentService.appendSection(
+        req.userId as string,
+        documentId,
+        text
+      );
+
+      res.status(200).json({
+        message: 'Section appended to study guide and re-embedded successfully',
+        document: updatedDoc,
+      });
     } catch (error) {
       next(error);
     }

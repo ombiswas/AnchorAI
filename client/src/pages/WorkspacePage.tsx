@@ -193,7 +193,16 @@ export const WorkspacePage: React.FC = () => {
           onBackToLibrary={() => setQuizResult(null)}
         />
       ) : activeChatDoc ? (
-        <DocumentChat document={activeChatDoc} onBackToLibrary={() => setActiveChatDoc(null)} />
+        <DocumentChat
+          document={activeChatDoc}
+          onBackToLibrary={() => setActiveChatDoc(null)}
+          onDocumentUpdated={(updatedDoc) => {
+            setDocuments((prev) =>
+              prev.map((d) => (d._id === updatedDoc._id ? updatedDoc : d))
+            );
+            setActiveChatDoc(updatedDoc);
+          }}
+        />
       ) : (
         <div className="space-y-6">
           {/* Navigation Tabs */}

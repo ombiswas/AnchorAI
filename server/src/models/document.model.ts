@@ -18,6 +18,7 @@ export interface IDocument extends Document {
   ocrEngine?: 'tesseract' | 'vision-llm';
   hasLowConfidenceWarning?: boolean;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 const documentSchema = new Schema<IDocument>(
@@ -90,6 +91,10 @@ const documentSchema = new Schema<IDocument>(
       type: Date,
       default: Date.now,
       index: true,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

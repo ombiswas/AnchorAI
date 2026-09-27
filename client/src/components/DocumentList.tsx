@@ -207,6 +207,18 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </span>
                       <span>·</span>
                       <span>{formatDate(doc.createdAt)}</span>
+                      {doc.updatedAt && doc.updatedAt !== doc.createdAt && (
+                        <>
+                          <span>·</span>
+                          <span
+                            className="inline-flex items-center gap-1 rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[10.5px] font-semibold text-emerald-800"
+                            title={`Last updated: ${new Date(doc.updatedAt).toLocaleString()}`}
+                          >
+                            <span className="h-1 w-1 rounded-full bg-emerald-600" />
+                            Updated {formatDate(doc.updatedAt)}
+                          </span>
+                        </>
+                      )}
                       {doc.chunkCount > 0 && (
                         <>
                           <span>·</span>

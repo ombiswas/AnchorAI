@@ -11,6 +11,7 @@ router.use(authenticate);
 
 router.post('/upload', uploadMiddleware.single('file'), documentController.upload);
 router.post('/primer', primerRateLimiter, documentController.createPrimer);
+router.post('/:id/append', documentController.appendSection);
 router.get('/', documentController.list);
 router.get('/:id', documentController.getById);
 

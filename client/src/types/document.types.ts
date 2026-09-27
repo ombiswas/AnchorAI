@@ -15,6 +15,7 @@ export interface StudyDocument {
   ocrEngine?: 'tesseract' | 'vision-llm';
   hasLowConfidenceWarning?: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface DocumentUploadResponse {
@@ -32,6 +33,15 @@ export interface CreatePrimerRequest {
 }
 
 export interface CreatePrimerResponse {
+  message: string;
+  document: StudyDocument;
+}
+
+export interface AppendSectionRequest {
+  text: string;
+}
+
+export interface AppendSectionResponse {
   message: string;
   document: StudyDocument;
 }

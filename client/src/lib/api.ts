@@ -101,6 +101,19 @@ class ApiClient {
       );
     },
 
+    append: async (
+      id: string,
+      text: string
+    ): Promise<import('../types/document.types').AppendSectionResponse> => {
+      return this.request<import('../types/document.types').AppendSectionResponse>(
+        `/documents/${id}/append`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ text }),
+        }
+      );
+    },
+
     upload: async (
       file: File,
       title?: string,

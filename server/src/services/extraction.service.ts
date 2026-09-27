@@ -10,6 +10,7 @@ export interface ExtraIngestionUpdates {
   ocrConfidence?: number;
   ocrEngine?: 'tesseract' | 'vision-llm';
   hasLowConfidenceWarning?: boolean;
+  updatedAt?: Date;
 }
 
 export class ExtractionService {
@@ -54,9 +55,17 @@ export class ExtractionService {
   }
 
   /**
-   * Shared chunking + embedding + vector storage pipeline.
-   * Feeds both PDF and OCR image text into token-aware chunking, batch embeddings,
-   * MongoDB vector storage, and updates the document status to 'ready'.
+   * Shared chunking + embedding + vector storage pipeline (Phase 1c).
+   *
+   * Architectural Decisions Explained:
+   * 1. Deferred Mutation (Zero Partial Chunking): Token chunking and batch embedding generation
+   *    run BEFORE any database deletions occur. If external LLM/embedding APIs fail or rate limit,
+   *    the document's existing chunks remain 100% intact.
+   * 2. Snapshot & Rollback: Prior to deleting old chunks, a snapshot of existing chunks is taken.
+   *    If MongoDB insertion fails midway, the previous chunks are immediately restored.
+   * 3. DRY Reuse Across All Sources: Exactly identical chunking (400 tokens / 50 overlap), embedding,
+   *    and storage logic is utilized for PDF uploads, Image OCR transcriptions, AI Primers,
+   *    and study guide section appends.
    */
   public async ingestExtractedText(
     documentId: string | Types.ObjectId,
@@ -76,10 +85,7 @@ export class ExtractionService {
       throw new Error('Processed document text is empty after cleaning.');
     }
 
-    // 2. Idempotency: Remove existing chunks if re-processing this document
-    await ChunkModel.deleteMany({ documentId: doc._id });
-
-    // 3. Token-aware chunking (~400 tokens with ~50 token overlap)
+    // 2. Token-aware chunking (~400 tokens with ~50 token overlap)
     const tokenChunks = chunkTextWithTiktoken(cleaned, {
       chunkSize: 400,
       chunkOverlap: 50,
@@ -89,11 +95,11 @@ export class ExtractionService {
       `[chunking] Document ${documentId} split into ${tokenChunks.length} chunks (from ${pageCount} pages)`
     );
 
-    // 4. Generate vector embeddings in batches via OpenAI text-embedding-3-small
+    // 3. Generate vector embeddings in batches via OpenAI text-embedding-3-small
     const chunkTexts = tokenChunks.map((c) => c.text);
     const { embeddings, totalTokens } = await embeddingService.generateBatchEmbeddings(chunkTexts);
 
-    // 5. Assemble and insert chunks with embeddings into MongoDB
+    // 4. Assemble new chunk documents with embeddings
     const chunkDocuments = tokenChunks.map((chunk, index) => ({
       documentId: doc._id,
       userId: doc.userId,
@@ -107,15 +113,37 @@ export class ExtractionService {
       createdAt: new Date(),
     }));
 
-    await ChunkModel.insertMany(chunkDocuments);
+    // 5. Snapshot existing chunks for rollback safety
+    const existingChunks = await ChunkModel.find({ documentId: doc._id }).lean().exec();
 
-    // 6. Update Document status to ready with chunk count, token usage, and optional OCR metadata
+    // 6. Atomically replace chunks with rollback fallback
+    try {
+      await ChunkModel.deleteMany({ documentId: doc._id });
+      await ChunkModel.insertMany(chunkDocuments);
+    } catch (swapError) {
+      console.error(
+        `[ingestion] Failed to swap chunks for doc ${documentId}. Triggering rollback to previous chunks:`,
+        swapError
+      );
+      if (existingChunks.length > 0) {
+        try {
+          await ChunkModel.insertMany(existingChunks);
+          console.log(`[ingestion] Rollback successful for doc ${documentId}. Restored ${existingChunks.length} chunks.`);
+        } catch (rollbackErr) {
+          console.error(`[ingestion] Critical: Failed to restore previous chunks during rollback:`, rollbackErr);
+        }
+      }
+      throw swapError;
+    }
+
+    // 7. Update Document status to ready with chunk count, token usage, and timestamps
     await DocumentModel.findByIdAndUpdate(documentId, {
       status: 'ready',
       extractedText: cleaned,
       chunkCount: tokenChunks.length,
-      totalTokensUsed: totalTokens,
+      totalTokensUsed: (doc.totalTokensUsed || 0) + totalTokens,
       errorReason: undefined,
+      updatedAt: extraUpdates.updatedAt || new Date(),
       ...extraUpdates,
     });
 

@@ -6,17 +6,30 @@ import type { StudyDocument } from '../types/document.types';
 interface DocumentChatProps {
   document: StudyDocument;
   onBackToLibrary: () => void;
+  onDocumentUpdated?: (updatedDoc: StudyDocument) => void;
 }
 
-export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLibrary }) => {
+export const DocumentChat: React.FC<DocumentChatProps> = ({
+  document,
+  onBackToLibrary,
+  onDocumentUpdated,
+}) => {
+  const [currentDoc, setCurrentDoc] = useState<StudyDocument>(document);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [appendSuccessNotice, setAppendSuccessNotice] = useState<string | null>(null);
   const [expandedSourceIndex, setExpandedSourceIndex] = useState<string | null>(null);
   const [allowFallback, setAllowFallback] = useState<boolean>(true);
   const [appendedGuideIds, setAppendedGuideIds] = useState<Set<string>>(new Set());
+  const [appendingId, setAppendingId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync if parent document prop updates
+  useEffect(() => {
+    setCurrentDoc(document);
+  }, [document]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,8 +39,26 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const handleAppendToStudyGuide = (message: ChatMessage) => {
-    setAppendedGuideIds((prev) => new Set(prev).add(message.id));
+  const handleAppendToStudyGuide = async (message: ChatMessage) => {
+    if (appendingId || appendedGuideIds.has(message.id)) return;
+
+    setAppendingId(message.id);
+    setErrorMsg(null);
+    setAppendSuccessNotice(null);
+
+    try {
+      const res = await api.documents.append(currentDoc._id, message.text);
+      setCurrentDoc(res.document);
+      setAppendedGuideIds((prev) => new Set(prev).add(message.id));
+      setAppendSuccessNotice(
+        `Added to your study guide! Document re-indexed to ${res.document.chunkCount} vector chunks.`
+      );
+      onDocumentUpdated?.(res.document);
+    } catch (err) {
+      setErrorMsg((err as Error).message || 'Failed to append section to study guide');
+    } finally {
+      setAppendingId(null);
+    }
   };
 
   const handleSendMessage = async (e?: React.FormEvent, customQuery?: string) => {
@@ -49,7 +80,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
     setIsLoading(true);
 
     try {
-      const response = await api.chat.ask(document._id, query, allowFallback);
+      const response = await api.chat.ask(currentDoc._id, query, allowFallback);
 
       const assistantMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -99,11 +130,11 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
                 RAG Scoped Session
               </span>
               <span className="rounded bg-neutral-200 px-2 py-0.5 font-mono text-[11px] font-medium text-neutral-800">
-                {document.subject || 'General'}
+                {currentDoc.subject || 'General'}
               </span>
             </div>
             <h2 className="mt-0.5 text-base font-semibold tracking-tight text-neutral-950">
-              {document.title}
+              {currentDoc.title}
             </h2>
           </div>
         </div>
@@ -129,7 +160,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
           </button>
 
           <span className="font-mono text-xs font-medium text-neutral-600">
-            {document.chunkCount} Chunks
+            {currentDoc.chunkCount} Chunks
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-emerald-800">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
@@ -139,13 +170,13 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
       </div>
 
       {/* Low OCR Confidence Advisory Banner */}
-      {document.hasLowConfidenceWarning && (
+      {currentDoc.hasLowConfidenceWarning && (
         <div className="border-b border-amber-200 bg-amber-50/90 px-6 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span>⚠️</span>
             <span>
               <strong>Note:</strong> This document was transcribed from handwritten or photographed
-              notes with moderate OCR confidence (~{document.ocrConfidence || 50}%). Some terms or
+              notes with moderate OCR confidence (~{currentDoc.ocrConfidence || 50}%). Some terms or
               formulas may contain transcription errors.
             </span>
           </div>
@@ -266,14 +297,21 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
                       <button
                         type="button"
                         onClick={() => handleAppendToStudyGuide(msg)}
-                        disabled={appendedGuideIds.has(msg.id)}
+                        disabled={appendedGuideIds.has(msg.id) || appendingId === msg.id}
                         className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs font-semibold transition shadow-2xs active:scale-[0.98] ${
                           appendedGuideIds.has(msg.id)
                             ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 cursor-default'
-                            : 'border border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900 hover:bg-neutral-50'
+                            : appendingId === msg.id
+                              ? 'border border-amber-300 bg-amber-100/80 text-amber-900 cursor-wait'
+                              : 'border border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900 hover:bg-neutral-50'
                         }`}
                       >
-                        {appendedGuideIds.has(msg.id) ? (
+                        {appendingId === msg.id ? (
+                          <>
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-900 border-t-transparent" />
+                            <span>Adding to study guide...</span>
+                          </>
+                        ) : appendedGuideIds.has(msg.id) ? (
                           <>
                             <svg
                               className="h-3.5 w-3.5 text-emerald-600"
@@ -288,7 +326,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
                                 d="M5 13l4 4L19 7"
                               />
                             </svg>
-                            Appended to Study Guide
+                            <span>Added to your study guide</span>
                           </>
                         ) : (
                           <>
@@ -305,7 +343,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
                                 d="M12 4v16m8-8H4"
                               />
                             </svg>
-                            Append to Study Guide
+                            <span>Append to Study Guide</span>
                           </>
                         )}
                       </button>
@@ -418,6 +456,23 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
         </div>
       )}
 
+      {/* Append Success Notice */}
+      {appendSuccessNotice && (
+        <div className="border-t border-emerald-200 bg-emerald-50/90 px-6 py-2.5 text-xs text-emerald-900 flex items-center justify-between transition-all">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-emerald-700">✓</span>
+            <span className="font-medium">{appendSuccessNotice}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAppendSuccessNotice(null)}
+            className="text-emerald-700 hover:text-emerald-950 font-mono text-xs px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Input Bar */}
       <form onSubmit={handleSendMessage} className="border-t border-neutral-200 bg-white p-4">
         <div className="flex gap-2.5">
@@ -425,7 +480,7 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={`Ask a question grounded in ${document.title}...`}
+            placeholder={`Ask a question grounded in ${currentDoc.title}...`}
             disabled={isLoading}
             className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none"
           />
