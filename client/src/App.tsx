@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
+import { Footer } from './components/Footer';
 import { LandingHero } from './components/LandingHero';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './hooks/useAuth';
+import { LicensePage } from './pages/LicensePage';
 import { LoginPage } from './pages/LoginPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { SignupPage } from './pages/SignupPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 
-type ViewMode = 'home' | 'workspace' | 'login' | 'signup';
+export type ViewMode = 'home' | 'workspace' | 'login' | 'signup' | 'privacy' | 'license';
 
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('home');
@@ -23,6 +26,8 @@ const AppContent: React.FC = () => {
           <LandingHero
             onNavigateToSignup={() => setCurrentView('signup')}
             onNavigateToWorkspace={() => setCurrentView('workspace')}
+            onNavigateToPrivacy={() => setCurrentView('privacy')}
+            onNavigateToLicense={() => setCurrentView('license')}
           />
         )}
 
@@ -40,6 +45,14 @@ const AppContent: React.FC = () => {
           />
         )}
 
+        {currentView === 'privacy' && (
+          <PrivacyPolicyPage onBack={() => setCurrentView('home')} />
+        )}
+
+        {currentView === 'license' && (
+          <LicensePage onBack={() => setCurrentView('home')} />
+        )}
+
         {currentView === 'workspace' && (
           <ProtectedRoute onRedirectToLogin={() => setCurrentView('login')}>
             <WorkspacePage />
@@ -47,18 +60,9 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Minimalistic Wordmark Footer (hidden in workspace view for a clean native app chat experience) */}
+      {/* Structured Comprehensive Footer (hidden in workspace view for a clean native app chat experience) */}
       {currentView !== 'workspace' && (
-        <footer className="border-t border-neutral-200/80 bg-white py-12 text-center">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
-              AnchorAI · AI-Native Study Platform
-            </p>
-            <div className="mt-4 font-mono text-[56px] font-bold tracking-tighter text-neutral-100 sm:text-[90px]">
-              ANCHOR.AI
-            </div>
-          </div>
-        </footer>
+        <Footer onNavigate={setCurrentView} />
       )}
     </div>
   );

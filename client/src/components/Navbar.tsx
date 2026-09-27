@@ -2,8 +2,8 @@ import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 interface NavbarProps {
-  currentView: 'home' | 'workspace' | 'login' | 'signup';
-  onNavigate: (view: 'home' | 'workspace' | 'login' | 'signup') => void;
+  currentView: 'home' | 'workspace' | 'login' | 'signup' | 'privacy' | 'license';
+  onNavigate: (view: 'home' | 'workspace' | 'login' | 'signup' | 'privacy' | 'license') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {

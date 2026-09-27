@@ -119,20 +119,20 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
   };
 
   return (
-    <div className="flex flex-1 h-full min-h-0 flex-col rounded-xl border border-neutral-200/90 bg-white shadow-sm overflow-hidden">
+    <div className="flex flex-1 h-full min-h-0 flex-col rounded-xl border border-zinc-200/90 bg-white shadow-xs overflow-hidden">
       {/* Chat Scoped Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-2.5 sm:px-6 sm:py-3 gap-2 sm:gap-4">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/90 bg-white px-3.5 py-2.5 sm:px-6 sm:py-3.5 gap-2 sm:gap-4">
         <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
           <button
             onClick={onBackToLibrary}
-            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-md border border-neutral-300 bg-white text-neutral-800 transition hover:bg-neutral-100 hover:text-black shadow-2xs"
+            className="btn-press flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-50 hover:text-zinc-950 shadow-2xs"
             title="Back to Document Library"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={1.8}
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
@@ -140,14 +140,14 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
 
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-600 truncate">
+              <span className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-400 truncate">
                 RAG Scoped
               </span>
-              <span className="rounded bg-neutral-200 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-medium text-neutral-800 truncate max-w-[90px] sm:max-w-none">
+              <span className="rounded bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-medium text-zinc-700 truncate max-w-[90px] sm:max-w-none">
                 {currentDoc.subject || 'General'}
               </span>
             </div>
-            <h2 className="mt-0.5 text-sm sm:text-base font-semibold tracking-tight text-neutral-950 truncate max-w-[130px] sm:max-w-[280px] md:max-w-md" title={currentDoc.title}>
+            <h2 className="mt-0.5 font-heading text-sm sm:text-base font-semibold tracking-tight text-zinc-950 truncate max-w-[130px] sm:max-w-[280px] md:max-w-md" title={currentDoc.title}>
               {currentDoc.title}
             </h2>
           </div>
@@ -158,20 +158,20 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
           <button
             type="button"
             onClick={() => setAllowFallback(!allowFallback)}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[11px] font-medium border transition ${
+            className={`btn-press inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[11px] font-medium border transition ${
               allowFallback
-                ? 'border-indigo-200 bg-indigo-50/80 text-indigo-900 hover:bg-indigo-100/70'
-                : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                ? 'border-zinc-300 bg-zinc-100/90 text-zinc-900'
+                : 'border-zinc-200 bg-white text-zinc-500 hover:text-zinc-800'
             }`}
             title="Toggle whether AnchorAI can fall back to general academic knowledge if your notes don't cover a question."
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                allowFallback ? 'bg-indigo-600 animate-pulse' : 'bg-neutral-400'
+                allowFallback ? 'bg-zinc-950' : 'bg-zinc-300'
               }`}
             />
-            <span className="hidden sm:inline">AI Fallback: {allowFallback ? 'On' : 'Off'}</span>
-            <span className="sm:hidden">Fallback: {allowFallback ? 'On' : 'Off'}</span>
+            <span className="hidden sm:inline">Fallback: {allowFallback ? 'Enabled' : 'Strict'}</span>
+            <span className="sm:hidden">{allowFallback ? 'Fallback' : 'Strict'}</span>
           </button>
 
           {messages.length > 0 && (
@@ -184,75 +184,82 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                   setAppendSuccessNotice(null);
                 }
               }}
-              className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 sm:px-2.5 py-1 font-mono text-[10px] sm:text-[11px] font-medium text-neutral-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 shadow-2xs"
+              className="btn-press inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 sm:px-2.5 py-1 font-mono text-[10px] sm:text-[11px] font-medium text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950 shadow-2xs"
               title="Clear all messages in this conversation"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
               <span className="hidden sm:inline">Clear</span>
             </button>
           )}
 
-          <span className="hidden sm:inline-block font-mono text-xs font-medium text-neutral-600">
+          <span className="hidden sm:inline-block font-mono text-xs font-medium text-zinc-500">
             {currentDoc.chunkCount} Chunks
           </span>
-          <span className="hidden md:inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-emerald-800">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-            Atlas Grounded
+          <span className="hidden md:inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 font-mono text-[11px] font-medium text-zinc-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+            Atlas Vector Store
           </span>
         </div>
       </div>
 
       {/* Low OCR Confidence Advisory Banner */}
       {currentDoc.hasLowConfidenceWarning && (
-        <div className="border-b border-amber-200 bg-amber-50/90 px-6 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-3">
+        <div className="border-b border-zinc-200 bg-zinc-50/90 px-5 py-2.5 text-xs text-zinc-700 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span>⚠️</span>
+            <svg className="h-4 w-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
             <span>
-              <strong>Note:</strong> This document was transcribed from handwritten or photographed
-              notes with moderate OCR confidence (~{currentDoc.ocrConfidence || 50}%). Some terms or
-              formulas may contain transcription errors.
+              <strong>Transcription Advisory:</strong> Transcribed from photographed or handwritten
+              notes with moderate OCR confidence (~{currentDoc.ocrConfidence || 50}%).
             </span>
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-amber-800 shrink-0">
+          <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-zinc-500 shrink-0">
             OCR Advisory
           </span>
         </div>
       )}
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 bg-neutral-50/30">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 bg-zinc-50/30">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto py-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#010120] text-white shadow-sm">
-              <span className="font-mono text-lg font-bold">⚓</span>
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-950 text-white shadow-xs">
+              <svg className="h-5 w-5 text-zinc-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-neutral-950">
-              Ask questions about this document
+            <h3 className="mt-4 font-heading text-lg font-semibold tracking-tight text-zinc-950">
+              Grounded Document Intelligence
             </h3>
-            <p className="mt-1.5 text-sm text-neutral-600 leading-relaxed max-w-md">
-              Answers are synthesized strictly from the retrieved excerpts of{' '}
-              <strong className="text-neutral-900 font-semibold">{document.title}</strong>, complete
-              with page-level citations.
+            <p className="mt-1.5 text-xs sm:text-sm text-zinc-600 leading-relaxed max-w-md font-body">
+              Queries are synthesized strictly from retrieved passages in{' '}
+              <strong className="text-zinc-900 font-semibold">{document.title}</strong>, complete
+              with verbatim page citations.
             </p>
 
             <div className="mt-6 w-full space-y-2.5 text-left">
-              <span className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                Suggested Questions
+              <span className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Suggested Prompts
               </span>
               <div className="flex flex-col gap-2">
                 {[
                   'Summarize the core takeaways from these notes',
-                  'What are the primary definitions or formulas presented?',
-                  'List the main topics covered in this document',
+                  'What are the primary definitions or mechanisms presented?',
+                  'List the key topics and comparison points in this document',
                 ].map((suggestion, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(undefined, suggestion)}
-                    className="text-left rounded-md border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-800 transition hover:border-neutral-900 hover:bg-neutral-50 hover:text-black shadow-2xs"
+                    className="btn-press flex items-center justify-between rounded-lg border border-zinc-200/90 bg-white p-3 text-xs sm:text-sm font-medium text-zinc-800 transition hover:border-zinc-950 hover:bg-zinc-50/60 shadow-2xs text-left"
                   >
-                    &ldquo;{suggestion}&rdquo; &rarr;
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-[11px] text-zinc-400 font-semibold">0{idx + 1}</span>
+                      <span>{suggestion}</span>
+                    </div>
+                    <span className="font-mono text-zinc-400 text-xs">&rarr;</span>
                   </button>
                 ))}
               </div>
@@ -268,52 +275,53 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                 className={`flex flex-col w-full ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 {msg.sender === 'user' ? (
-                  /* User Message: Clean right-aligned bubble */
-                  <div className="max-w-[88%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-neutral-900 px-4 py-3 sm:px-5 sm:py-3.5 text-white shadow-sm leading-relaxed text-sm">
-                    <div className="mb-1.5 flex items-center justify-between gap-4 font-mono text-xs">
-                      <span className="text-neutral-300 font-semibold uppercase tracking-wider text-[11px]">
+                  /* User Message: Minimalist carbon bubble */
+                  <div className="max-w-[88%] sm:max-w-[75%] rounded-xl rounded-tr-xs bg-zinc-950 px-4 py-3 sm:px-5 sm:py-3.5 text-zinc-100 shadow-xs leading-relaxed text-xs sm:text-sm border border-zinc-900">
+                    <div className="mb-1.5 flex items-center justify-between gap-4 font-mono text-[10px]">
+                      <span className="text-zinc-400 font-semibold uppercase tracking-widest">
                         You
                       </span>
-                      <span className="text-neutral-400 text-[11px]">{msg.timestamp}</span>
+                      <span className="text-zinc-500">{msg.timestamp}</span>
                     </div>
                     <MarkdownMessage content={msg.text} isUser={true} />
                   </div>
                 ) : (
                   /* AI Response: Full-width container (ChatGPT style) for maximum space & rich formatting */
                   <div
-                    className={`w-full rounded-xl p-4 sm:p-6 leading-relaxed text-sm transition-all ${
+                    className={`w-full rounded-xl p-4 sm:p-6 leading-relaxed text-xs sm:text-sm transition-all border shadow-xs ${
                       isGeneralMode
-                        ? 'border border-amber-300/80 bg-amber-50/40 text-neutral-900 shadow-2xs'
-                        : 'border border-neutral-200/90 bg-white text-neutral-900 shadow-2xs'
+                        ? 'border-zinc-200 bg-white text-zinc-900'
+                        : 'border-zinc-200/90 bg-white text-zinc-900'
                     }`}
                   >
                     {/* Header with Sender Tag and Copy Button */}
-                    <div className="mb-3 flex items-center justify-between gap-3 font-mono text-xs">
+                    <div className="mb-3.5 flex items-center justify-between gap-3 font-mono text-xs">
                       <div className="flex items-center gap-2">
                         {isGeneralMode ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100/90 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-950">
-                            <svg
-                              className="h-3 w-3 text-amber-700"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                              />
-                            </svg>
-                            General Knowledge · Not in your notes
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <span className="flex h-5 w-5 items-center justify-center rounded bg-[#010120] text-white text-[10px] font-bold">
-                              ⚓
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-5 w-5 items-center justify-center rounded border border-zinc-300 bg-zinc-800 text-white font-mono text-[10px] font-bold">
+                              AI
                             </span>
-                            <span className="text-neutral-800 font-bold uppercase tracking-wider text-[11px]">
-                              AnchorAI Assistant
+                            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-800">
+                              AnchorAI
+                            </span>
+                            <span className="text-zinc-300">·</span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-0.5 font-mono text-[10px] font-medium text-zinc-700">
+                              General Knowledge · Out of Notes
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-5 w-5 items-center justify-center rounded border border-zinc-200 bg-zinc-950 text-white font-mono text-[10px] font-bold">
+                              AI
+                            </span>
+                            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-800">
+                              AnchorAI
+                            </span>
+                            <span className="text-zinc-300">·</span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 font-mono text-[10px] font-medium text-zinc-700">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              Grounded in Notes
                             </span>
                           </div>
                         )}
@@ -324,17 +332,17 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                         <button
                           type="button"
                           onClick={() => handleCopyResponse(msg.id, msg.text)}
-                          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] font-semibold transition shadow-2xs active:scale-[0.98] ${
+                          className={`btn-press inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] font-medium transition shadow-2xs ${
                             copiedMessageId === msg.id
-                              ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                              : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900'
+                              ? 'border-zinc-300 bg-zinc-100 text-zinc-950 font-semibold'
+                              : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950'
                           }`}
                           title="Copy response to clipboard"
                         >
                           {copiedMessageId === msg.id ? (
                             <>
                               <svg
-                                className="h-3.5 w-3.5 text-emerald-600"
+                                className="h-3.5 w-3.5 text-zinc-950"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -342,16 +350,16 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  strokeWidth={2.2}
+                                  strokeWidth={2}
                                   d="M5 13l4 4L19 7"
                                 />
                               </svg>
-                              <span className="font-semibold text-emerald-700">Copied!</span>
+                              <span>Copied</span>
                             </>
                           ) : (
                             <>
                               <svg
-                                className="h-3.5 w-3.5 text-neutral-500"
+                                className="h-3.5 w-3.5 text-zinc-400"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -368,105 +376,104 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                           )}
                         </button>
 
-                        <span className="text-neutral-400 font-mono text-[11px]">
+                        <span className="text-zinc-400 font-mono text-[11px]">
                           {msg.timestamp}
                         </span>
                       </div>
                     </div>
 
-                  {/* General Knowledge Fallback Notice */}
-                  {isGeneralMode && (
-                    <div className="mb-3 rounded border border-amber-200/90 bg-amber-100/60 px-3.5 py-2 text-xs text-amber-950 leading-relaxed">
-                      <strong>Curriculum Notice:</strong> This question could not be verified in{' '}
-                      <em>{document.title}</em> with sufficient similarity confidence. The answer
-                      below is synthesized from general academic knowledge to assist your study.
-                    </div>
-                  )}
+                    {/* General Knowledge Fallback Notice */}
+                    {isGeneralMode && (
+                      <div className="mb-3 rounded-lg border border-zinc-200 bg-zinc-50/80 p-3 text-xs text-zinc-700 leading-relaxed font-body">
+                        <strong className="font-semibold text-zinc-950">Curriculum Scope:</strong> This concept could not be verified in{' '}
+                        <em>{document.title}</em> with high similarity confidence. The answer
+                        below is synthesized from general academic knowledge to assist your study.
+                      </div>
+                    )}
 
-                  {/* Message Body */}
-                  <MarkdownMessage content={msg.text} isUser={false} />
+                    {/* Message Body */}
+                    <MarkdownMessage content={msg.text} isUser={false} />
 
-                  {/* Append to Study Guide Button for General Knowledge answers */}
-                  {isGeneralMode && (
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-amber-200/80 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => handleAppendToStudyGuide(msg)}
-                        disabled={appendedGuideIds.has(msg.id) || appendingId === msg.id}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs font-semibold transition shadow-2xs active:scale-[0.98] ${
-                          appendedGuideIds.has(msg.id)
-                            ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 cursor-default'
-                            : appendingId === msg.id
-                              ? 'border border-amber-300 bg-amber-100/80 text-amber-900 cursor-wait'
-                              : 'border border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900 hover:bg-neutral-50'
-                        }`}
-                      >
-                        {appendingId === msg.id ? (
-                          <>
-                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-900 border-t-transparent" />
-                            <span>Adding to study guide...</span>
-                          </>
-                        ) : appendedGuideIds.has(msg.id) ? (
-                          <>
-                            <svg
-                              className="h-3.5 w-3.5 text-emerald-600"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                            <span>Added to your study guide</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="h-3.5 w-3.5 text-neutral-600"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 4v16m8-8H4"
-                              />
-                            </svg>
-                            <span>Append to Study Guide</span>
-                          </>
+                    {/* Append to Study Guide Button for General Knowledge answers */}
+                    {isGeneralMode && (
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => handleAppendToStudyGuide(msg)}
+                          disabled={appendedGuideIds.has(msg.id) || appendingId === msg.id}
+                          className={`btn-press inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs font-medium transition shadow-2xs ${
+                            appendedGuideIds.has(msg.id)
+                              ? 'border border-zinc-300 bg-zinc-100 text-zinc-800 cursor-default'
+                              : appendingId === msg.id
+                                ? 'border border-zinc-300 bg-zinc-100 text-zinc-600 cursor-wait'
+                                : 'border border-zinc-300 bg-white text-zinc-800 hover:border-zinc-950 hover:bg-zinc-50'
+                          }`}
+                        >
+                          {appendingId === msg.id ? (
+                            <>
+                              <span className="h-3 w-3 animate-spin rounded-full border-2 border-zinc-950 border-t-transparent" />
+                              <span>Adding to study guide...</span>
+                            </>
+                          ) : appendedGuideIds.has(msg.id) ? (
+                            <>
+                              <svg
+                                className="h-3.5 w-3.5 text-zinc-950"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              <span>Added to Study Guide</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="h-3.5 w-3.5 text-zinc-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.8}
+                                  d="M12 4v16m8-8H4"
+                                />
+                              </svg>
+                              <span>Append to Study Guide</span>
+                            </>
+                          )}
+                        </button>
+
+                        {msg.latency && (
+                          <span className="font-mono text-[11px] text-zinc-400">
+                            Latency: {(msg.latency.totalMs / 1000).toFixed(2)}s (LLM: {msg.latency.llmMs}ms)
+                          </span>
                         )}
-                      </button>
+                      </div>
+                    )}
 
-                      {msg.latency && (
-                        <span className="font-mono text-xs font-medium text-neutral-500">
-                          ⚡ {(msg.latency.totalMs / 1000).toFixed(2)}s (LLM: {msg.latency.llmMs}ms)
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    {/* No Context Alert for strict answers */}
+                    {!isGeneralMode && isUnknownAnswer(msg.text) && (
+                      <div className="mt-3.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700">
+                        <span className="font-semibold text-zinc-950">Notice:</span> The retrieved excerpts from
+                        this document did not contain enough verified information to answer this question.
+                      </div>
+                    )}
 
-                  {/* No Context Alert for strict answers */}
-                  {!isGeneralMode && isUnknownAnswer(msg.text) && (
-                    <div className="mt-3.5 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-                      <span className="font-semibold">Notice:</span> The retrieved excerpts from
-                      this document did not contain enough information to answer this question
-                      accurately.
-                    </div>
-                  )}
-
-                  {/* Cited Sources & Latency under Grounded AI response */}
-                  {!isGeneralMode && msg.sources && msg.sources.length > 0 && (
-                      <div className="mt-4 border-t border-neutral-200 pt-3.5">
+                    {/* Cited Sources & Latency under Grounded AI response */}
+                    {!isGeneralMode && msg.sources && msg.sources.length > 0 && (
+                      <div className="mt-4 border-t border-zinc-100 pt-3.5">
                         <div className="flex flex-wrap items-center justify-between gap-2.5">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
-                              Sources:
+                            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                              Verified Sources:
                             </span>
                             {msg.sources.map((src: CitedSource, idx: number) => {
                               const sourceKey = `${msg.id}-${idx}`;
@@ -478,22 +485,21 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                                   onClick={() =>
                                     setExpandedSourceIndex(isExpanded ? null : sourceKey)
                                   }
-                                  className={`rounded border px-2.5 py-1 font-mono text-xs font-medium transition ${
+                                  className={`btn-press rounded border px-2.5 py-1 font-mono text-[11px] transition ${
                                     isExpanded
-                                      ? 'border-neutral-900 bg-neutral-900 text-white'
-                                      : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:border-neutral-900 hover:bg-neutral-100'
+                                      ? 'border-zinc-950 bg-zinc-950 text-white font-medium'
+                                      : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-400 hover:bg-white'
                                   }`}
                                 >
-                                  Page {src.page || 'N/A'} (Score {src.similarityScore})
+                                  Page {src.page || 'N/A'} · Score {src.similarityScore}
                                 </button>
                               );
                             })}
                           </div>
 
                           {msg.latency && (
-                            <span className="font-mono text-xs font-medium text-neutral-500">
-                              ⚡ {(msg.latency.totalMs / 1000).toFixed(2)}s (Retrieval:{' '}
-                              {msg.latency.retrievalMs}ms, LLM: {msg.latency.llmMs}ms)
+                            <span className="font-mono text-[11px] text-zinc-400">
+                              Latency: {(msg.latency.totalMs / 1000).toFixed(2)}s
                             </span>
                           )}
                         </div>
@@ -506,15 +512,15 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                           return (
                             <div
                               key={idx}
-                              className="mt-3 rounded-md border border-neutral-300 bg-neutral-100/80 p-3.5 font-mono text-xs text-neutral-800 leading-normal"
+                              className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3.5 font-mono text-xs text-zinc-700 leading-normal"
                             >
-                              <div className="mb-1.5 flex items-center justify-between font-semibold text-neutral-600 text-[11px]">
+                              <div className="mb-1.5 flex items-center justify-between font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">
                                 <span>
-                                  CHUNK #{src.chunkIndex} · PAGE {src.page || 'N/A'}
+                                  Chunk #{src.chunkIndex} · Page {src.page || 'N/A'}
                                 </span>
-                                <span>SIMILARITY: {src.similarityScore}</span>
+                                <span>Similarity {src.similarityScore}</span>
                               </div>
-                              <p className="whitespace-pre-wrap">{src.textSnippet}</p>
+                              <p className="whitespace-pre-wrap font-mono text-[11px] text-zinc-800">{src.textSnippet}</p>
                             </div>
                           );
                         })}
@@ -530,10 +536,14 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
         {/* Loading / Typing Indicator */}
         {isLoading && (
           <div className="flex items-start">
-            <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center gap-2.5 font-mono text-xs font-medium text-neutral-700">
-                <span className="h-2.5 w-2.5 animate-ping rounded-full bg-neutral-900" />
-                <span>Searching vector database & synthesizing grounded answer...</span>
+            <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 shadow-2xs">
+              <div className="flex items-center gap-2.5 font-mono text-xs text-zinc-600">
+                <span className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-900 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-900 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-900 animate-bounce" />
+                </span>
+                <span>Searching vector database & synthesizing response...</span>
               </div>
             </div>
           </div>
@@ -543,36 +553,42 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
       </div>
 
       {/* Sticky Bottom Area */}
-      <div className="shrink-0 border-t border-neutral-200/90 bg-white">
+      <div className="shrink-0 border-t border-zinc-200/90 bg-white">
         {/* Error Callout */}
         {errorMsg && (
-          <div className="border-b border-red-200 bg-red-50 px-5 py-2.5 text-xs font-medium text-red-800 flex items-center justify-between">
+          <div className="border-b border-rose-200 bg-rose-50 px-5 py-2.5 text-xs font-medium text-rose-800 flex items-center justify-between">
             <div>
-              <span className="font-bold">Error:</span> {errorMsg}
+              <span className="font-semibold">Error:</span> {errorMsg}
             </div>
             <button
               type="button"
               onClick={() => setErrorMsg(null)}
-              className="text-red-700 hover:text-red-950 font-mono text-xs px-1"
+              className="text-rose-700 hover:text-rose-950 font-mono text-xs px-1"
             >
-              ✕
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         )}
 
         {/* Append Success Notice */}
         {appendSuccessNotice && (
-          <div className="border-b border-emerald-200 bg-emerald-50/90 px-5 py-2 text-xs text-emerald-900 flex items-center justify-between transition-all">
+          <div className="border-b border-zinc-200 bg-zinc-50 px-5 py-2 text-xs text-zinc-800 flex items-center justify-between transition-all">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-emerald-700">✓</span>
+              <svg className="h-3.5 w-3.5 text-zinc-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               <span className="font-medium">{appendSuccessNotice}</span>
             </div>
             <button
               type="button"
               onClick={() => setAppendSuccessNotice(null)}
-              className="text-emerald-700 hover:text-emerald-950 font-mono text-xs px-1"
+              className="text-zinc-500 hover:text-zinc-950 font-mono text-xs px-1"
             >
-              ✕
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         )}
@@ -586,18 +602,23 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={`Ask a question grounded in ${currentDoc.title}...`}
               disabled={isLoading}
-              className="w-full rounded-xl border border-neutral-300 bg-white pl-3.5 sm:pl-4 pr-20 sm:pr-24 py-3 sm:py-3.5 text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none shadow-2xs transition"
+              className="w-full rounded-xl border border-zinc-300 bg-white pl-3.5 sm:pl-4 pr-20 sm:pr-24 py-3 sm:py-3.5 text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950 focus:outline-none shadow-2xs transition"
             />
 
             <button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className="absolute right-1.5 sm:right-2 inline-flex items-center justify-center rounded-lg bg-neutral-950 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-40 shadow-xs"
+              className="btn-press absolute right-1.5 sm:right-2 inline-flex items-center justify-center rounded-lg bg-zinc-950 px-3 sm:px-4 py-1.5 sm:py-2 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-zinc-800 disabled:opacity-30 shadow-2xs"
             >
               {isLoading ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <span>Send</span>
+                <div className="flex items-center gap-1.5">
+                  <span>Send</span>
+                  <svg className="h-3 w-3 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </div>
               )}
             </button>
           </div>

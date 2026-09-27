@@ -94,21 +94,20 @@ export const WorkspacePage: React.FC = () => {
     >
       {/* Top Banner (hidden during active chat or active quiz to maximize focus) */}
       {!activeQuiz && !quizResult && !activeChatDoc && (
-        <div className="mb-6 sm:mb-8 rounded-xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="mb-6 sm:mb-8 rounded-xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-600">
-                  Session Active · Workspace
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                <span className="font-mono text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                  Workspace Environment · Active
                 </span>
               </div>
-              <h1 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-neutral-950">
+              <h1 className="mt-1 font-heading text-xl sm:text-2xl font-semibold tracking-tight text-zinc-950">
                 Welcome back, {user?.name}
               </h1>
-              <p className="mt-0.5 text-xs sm:text-sm text-neutral-600">
-                Account:{' '}
-                <span className="font-mono font-medium text-neutral-900">{user?.email}</span>
+              <p className="mt-0.5 font-mono text-[11px] sm:text-xs text-zinc-500">
+                Account: <span className="text-zinc-800 font-medium">{user?.email}</span>
               </p>
             </div>
 
@@ -116,10 +115,10 @@ export const WorkspacePage: React.FC = () => {
               {readyCount > 0 && !activeChatDoc && (
                 <button
                   onClick={() => handleOpenGenerator()}
-                  className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3 sm:px-3.5 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-800 transition hover:bg-indigo-100 shadow-2xs"
+                  className="btn-press inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md bg-zinc-950 px-3 sm:px-3.5 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-zinc-800 shadow-2xs"
                 >
                   <svg
-                    className="h-3.5 w-3.5 text-indigo-600"
+                    className="h-3.5 w-3.5 text-zinc-300"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -127,58 +126,73 @@ export const WorkspacePage: React.FC = () => {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
+                      strokeWidth={1.8}
                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                     />
                   </svg>
-                  New Quiz
+                  <span>New Quiz</span>
                 </button>
               )}
               <button
                 onClick={logout}
-                className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md border border-neutral-300 bg-white px-3 sm:px-4 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-800 transition hover:bg-neutral-100 hover:text-black shadow-2xs"
+                className="btn-press inline-flex h-8 sm:h-9 items-center justify-center rounded-md border border-zinc-200 bg-white px-3 sm:px-4 font-mono text-[11px] sm:text-xs font-medium uppercase tracking-wider text-zinc-700 transition hover:bg-zinc-50 hover:text-zinc-950 shadow-2xs"
               >
                 Sign Out
               </button>
             </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-2.5 sm:gap-3.5 border-t border-neutral-100 pt-4 sm:pt-5 sm:grid-cols-4">
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 sm:p-3.5">
-              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-neutral-600">
+          {/* Minimalist Metrics Grid */}
+          <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-2.5 sm:gap-3.5 border-t border-zinc-100 pt-4 sm:pt-5 sm:grid-cols-4">
+            <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-3 sm:p-3.5">
+              <span className="font-mono text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-500 block truncate">
                 Total Ingested
               </span>
-              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-neutral-950">
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-semibold tracking-tight text-zinc-950">
                 {documents.length}
               </div>
             </div>
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 sm:p-3.5">
-              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-800">
-                Ready for RAG
-              </span>
-              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-emerald-700">{readyCount}</div>
+            <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-3 sm:p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-500 block truncate">
+                  Ready for RAG
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </div>
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-semibold tracking-tight text-zinc-950">
+                {readyCount}
+              </div>
             </div>
-            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 sm:p-3.5">
-              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-amber-800">
-                Processing
-              </span>
-              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-amber-700">
+            <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-3 sm:p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-500 block truncate">
+                  Processing
+                </span>
+                {processingCount > 0 && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                )}
+              </div>
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-semibold tracking-tight text-zinc-950">
                 {processingCount}
               </div>
             </div>
-            <div className="rounded-lg border border-red-200 bg-red-50/50 p-3 sm:p-3.5">
-              <span className="font-mono text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-red-800">
-                Failed
-              </span>
-              <div className="mt-1 font-mono text-xl sm:text-2xl font-bold text-red-700">{failedCount}</div>
+            <div className="rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-3 sm:p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-zinc-500 block truncate">
+                  Failed
+                </span>
+                {failedCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
+              </div>
+              <div className="mt-1 font-mono text-xl sm:text-2xl font-semibold tracking-tight text-zinc-950">
+                {failedCount}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {errorMsg && (
-        <div className="mb-6 rounded-md border border-red-300 bg-red-50 p-3.5 text-xs font-semibold text-red-900">
+        <div className="mb-6 rounded-md border border-rose-200 bg-rose-50/80 p-3.5 text-xs font-medium text-rose-900">
           {errorMsg}
         </div>
       )}
@@ -214,18 +228,20 @@ export const WorkspacePage: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {/* Navigation Tabs */}
-          <div className="flex border-b border-neutral-200 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
+          <div className="flex border-b border-zinc-200 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
             <button
               onClick={() => setActiveTab('library')}
               className={`flex shrink-0 items-center gap-2 border-b-2 px-3.5 sm:px-5 py-2.5 sm:py-3 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition ${
                 activeTab === 'library'
-                  ? 'border-[#010120] text-neutral-950 font-bold'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-800'
+                  ? 'border-zinc-950 text-zinc-950 font-bold'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
               }`}
             >
-              <span>📚</span>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
               <span>Study Library</span>
-              <span className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600">
+              <span className="ml-0.5 rounded-full bg-zinc-100 border border-zinc-200 px-2 py-0.2 text-[10px] text-zinc-600 font-medium">
                 {documents.length}
               </span>
             </button>
@@ -233,12 +249,14 @@ export const WorkspacePage: React.FC = () => {
               onClick={() => setActiveTab('dashboard')}
               className={`flex shrink-0 items-center gap-2 border-b-2 px-3.5 sm:px-5 py-2.5 sm:py-3 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition ${
                 activeTab === 'dashboard'
-                  ? 'border-[#010120] text-neutral-950 font-bold'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-800'
+                  ? 'border-zinc-950 text-zinc-950 font-bold'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
               }`}
             >
-              <span>📊</span>
-              <span>Diagnostics & Mastery</span>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>Curriculum Diagnostics</span>
             </button>
           </div>
 
