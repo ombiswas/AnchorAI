@@ -19,9 +19,14 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
   const validateAndSetFile = (file: File) => {
     setErrorMessage(null);
 
-    // PDF mime or extension check
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMessage('Only PDF documents are supported at this step.');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage =
+      file.type.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(file.name.toLowerCase());
+
+    if (!isPdf && !isImage) {
+      setErrorMessage(
+        'Unsupported file format. Please upload a PDF or an image (.jpg, .jpeg, .png, .webp).'
+      );
       return;
     }
 
@@ -34,7 +39,7 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
 
     setSelectedFile(file);
     if (!title) {
-      // Auto-populate title without .pdf extension
+      // Auto-populate title without extension
       setTitle(file.name.replace(/\.[^/.]+$/, ''));
     }
   };
@@ -66,7 +71,7 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      setErrorMessage('Please select a PDF file to upload.');
+      setErrorMessage('Please select a PDF or image file to upload.');
       return;
     }
 
@@ -101,18 +106,28 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
     }
   };
 
+  const isSelectedFileImage =
+    selectedFile &&
+    (selectedFile.type.startsWith('image/') ||
+      /\.(jpe?g|png|webp)$/i.test(selectedFile.name.toLowerCase()));
+
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
       <div className="mb-5">
-        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
-          Document Ingestion · PDF
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+            Document Ingestion · PDF & Images (OCR)
+          </span>
+          <span className="rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 font-mono text-[10px] font-semibold text-indigo-700">
+            Handwritten Notes Ready
+          </span>
+        </div>
         <h2 className="mt-1 text-base font-semibold tracking-tight text-neutral-950">
           Upload Study Material
         </h2>
         <p className="mt-0.5 text-xs text-neutral-600">
-          Upload lecture slides, chapters, or syllabus PDFs (max 20MB). Extraction and chunking run
-          asynchronously.
+          Upload PDFs (slides, chapters) or photographed handwritten notes (PNG, JPG, WebP up to
+          20MB). Handwritten images are transcribed with hybrid OCR.
         </p>
       </div>
 
@@ -153,29 +168,56 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf,.pdf"
+            accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             onChange={handleFileChange}
             className="hidden"
             disabled={isUploading}
           />
 
           <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-neutral-100 border border-neutral-200 text-neutral-700 shadow-2xs">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.75}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
+            {isSelectedFileImage ? (
+              <svg
+                className="h-5 w-5 text-indigo-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.75}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.75}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+            )}
           </div>
 
           <div className="mt-3.5">
             {selectedFile ? (
               <div className="flex flex-col items-center">
-                <span className="font-mono text-sm font-semibold text-neutral-950">
-                  {selectedFile.name}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-semibold text-neutral-950">
+                    {selectedFile.name}
+                  </span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                      isSelectedFileImage
+                        ? 'bg-indigo-100 text-indigo-800'
+                        : 'bg-neutral-200 text-neutral-800'
+                    }`}
+                  >
+                    {isSelectedFileImage ? 'IMAGE (OCR)' : 'PDF'}
+                  </span>
+                </div>
                 <span className="mt-1 font-mono text-xs text-neutral-600">
                   {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB · Click or drag another file
                   to replace
@@ -184,13 +226,13 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onUpload
             ) : (
               <>
                 <p className="text-sm font-semibold text-neutral-900">
-                  Drag and drop your PDF here, or{' '}
+                  Drag and drop your PDF or notes image here, or{' '}
                   <span className="underline underline-offset-2 hover:text-black">
                     browse files
                   </span>
                 </p>
                 <p className="mt-1 font-mono text-xs text-neutral-500 uppercase tracking-wider">
-                  PDF format only · up to 20MB
+                  PDF, JPG, PNG, WebP · up to 20MB
                 </p>
               </>
             )}

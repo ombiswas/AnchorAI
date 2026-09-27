@@ -3,6 +3,7 @@ import { uploadFileBuffer } from '../config/cloudinary';
 import { DocumentModel, IDocument } from '../models/document.model';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { extractionService } from './extraction.service';
+import { ocrService } from './ocr.service';
 
 export interface UploadDocumentDto {
   title?: string;
@@ -11,8 +12,8 @@ export interface UploadDocumentDto {
 
 export class DocumentService {
   /**
-   * Uploads a document, creates a DB entry in 'processing' status,
-   * and triggers asynchronous text extraction without blocking the response.
+   * Uploads a document (PDF or Image), creates a DB entry in 'processing' status,
+   * and triggers asynchronous text extraction/OCR without blocking the HTTP response.
    */
   public async uploadDocument(
     userId: string,
@@ -23,19 +24,28 @@ export class DocumentService {
       throw new ValidationError('No file provided for upload');
     }
 
-    // Validate mime type and extension
-    if (file.mimetype !== 'application/pdf') {
-      throw new ValidationError('Only PDF documents are supported at this step');
+    // Validate supported file types (PDF and images)
+    const isPdf =
+      file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    const isImage =
+      file.mimetype.startsWith('image/') ||
+      /\.(jpe?g|png|webp)$/i.test(file.originalname.toLowerCase());
+
+    if (!isPdf && !isImage) {
+      throw new ValidationError(
+        'Unsupported file format. Only PDF documents and images (.jpg, .jpeg, .png, .webp) are supported.'
+      );
     }
 
-    // Validate size (max 20MB = 20 * 1024 * 1024 bytes)
+    // Validate size (max 20MB)
     const MAX_SIZE = 20 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      throw new ValidationError('Document file size exceeds the 20MB limit');
+      throw new ValidationError('File size exceeds the 20MB limit');
     }
 
     const documentTitle = dto.title?.trim() || file.originalname.replace(/\.[^/.]+$/, '').trim();
     const documentSubject = dto.subject?.trim() || 'General';
+    const determinedFileType = isImage ? 'image' : 'pdf';
 
     // 1. Upload raw file to storage (Cloudinary or local dev fallback)
     const uploadResult = await uploadFileBuffer(file.buffer, file.originalname);
@@ -45,18 +55,24 @@ export class DocumentService {
       userId: new Types.ObjectId(userId),
       title: documentTitle,
       subject: documentSubject,
-      fileType: 'pdf',
+      fileType: determinedFileType,
       fileUrl: uploadResult.url,
       status: 'processing',
       chunkCount: 0,
       createdAt: new Date(),
     });
 
-    // 3. Kick off extraction asynchronously (DO NOT AWAIT - return response immediately)
+    // 3. Kick off extraction / OCR asynchronously (DO NOT AWAIT - return response immediately)
     setImmediate(() => {
-      extractionService.processPdf(doc._id, file.buffer).catch((err) => {
-        console.error(`Unhandled error in async extraction for ${doc._id}:`, err);
-      });
+      if (isImage) {
+        ocrService.processImage(doc._id, file.buffer, file.mimetype).catch((err) => {
+          console.error(`Unhandled error in async image OCR for ${doc._id}:`, err);
+        });
+      } else {
+        extractionService.processPdf(doc._id, file.buffer).catch((err) => {
+          console.error(`Unhandled error in async PDF extraction for ${doc._id}:`, err);
+        });
+      }
     });
 
     return doc;

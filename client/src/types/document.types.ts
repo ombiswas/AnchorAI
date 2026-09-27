@@ -10,6 +10,9 @@ export interface StudyDocument {
   status: DocumentStatus;
   chunkCount: number;
   errorReason?: string;
+  ocrConfidence?: number;
+  ocrEngine?: 'tesseract' | 'vision-llm';
+  hasLowConfidenceWarning?: boolean;
   createdAt: string;
 }
 

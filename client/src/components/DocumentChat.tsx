@@ -112,6 +112,23 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
         </div>
       </div>
 
+      {/* Low OCR Confidence Advisory Banner */}
+      {document.hasLowConfidenceWarning && (
+        <div className="border-b border-amber-200 bg-amber-50/90 px-6 py-2.5 text-xs text-amber-900 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>⚠️</span>
+            <span>
+              <strong>Note:</strong> This document was transcribed from handwritten or photographed
+              notes with moderate OCR confidence (~{document.ocrConfidence || 50}%). Some terms or
+              formulas may contain transcription errors.
+            </span>
+          </div>
+          <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-amber-800 shrink-0">
+            OCR Advisory
+          </span>
+        </div>
+      )}
+
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-neutral-50/30">
         {messages.length === 0 ? (

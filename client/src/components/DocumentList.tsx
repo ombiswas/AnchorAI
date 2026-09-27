@@ -93,57 +93,117 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             No documents uploaded yet
           </h3>
           <p className="mt-1 max-w-sm text-xs text-neutral-600 leading-normal">
-            Upload your syllabus or lecture slide PDFs above to begin ingesting text for AI study
-            queries.
+            Upload your syllabus or lecture slide PDFs, or handwritten notes photos above to begin
+            ingesting text.
           </p>
         </div>
       ) : (
         <div className="divide-y divide-neutral-100">
-          {documents.map((doc) => (
-            <div
-              key={doc._id}
-              className="flex flex-col gap-3 p-5 transition hover:bg-neutral-50/70 sm:flex-row sm:items-center sm:justify-between"
-            >
-              {/* Document Info */}
-              <div className="flex items-start gap-3.5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-neutral-100 border border-neutral-200 text-neutral-800">
-                  <span className="font-mono text-xs font-bold uppercase">PDF</span>
-                </div>
+          {documents.map((doc) => {
+            const isImage = doc.fileType === 'image';
 
-                <div>
-                  <h4 className="text-sm font-semibold text-neutral-950">{doc.title}</h4>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-neutral-600">
-                    <span className="rounded bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-neutral-800 font-medium">
-                      {doc.subject || 'General'}
+            return (
+              <div
+                key={doc._id}
+                className="flex flex-col gap-3 p-5 transition hover:bg-neutral-50/70 sm:flex-row sm:items-center sm:justify-between"
+              >
+                {/* Document Info */}
+                <div className="flex items-start gap-3.5">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${
+                      isImage
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                        : 'bg-neutral-100 border-neutral-200 text-neutral-800'
+                    }`}
+                  >
+                    <span className="font-mono text-xs font-bold uppercase">
+                      {isImage ? 'IMG' : 'PDF'}
                     </span>
-                    <span>·</span>
-                    <span>{formatDate(doc.createdAt)}</span>
-                    {doc.chunkCount > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="font-medium text-neutral-700">
-                          {doc.chunkCount} vector chunks
+                  </div>
+
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-semibold text-neutral-950">{doc.title}</h4>
+                      {isImage && (
+                        <span className="rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 font-mono text-[10px] font-semibold text-indigo-700">
+                          {doc.ocrEngine === 'vision-llm' ? 'Vision OCR' : 'OCR'}
                         </span>
-                      </>
-                    )}
+                      )}
+                      {doc.hasLowConfidenceWarning && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-300 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-amber-900"
+                          title="Transcription may contain handwriting errors"
+                        >
+                          <span>⚠️</span>
+                          <span>Low OCR Confidence (~{doc.ocrConfidence || 50}%)</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-neutral-600">
+                      <span className="rounded bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-neutral-800 font-medium">
+                        {doc.subject || 'General'}
+                      </span>
+                      <span>·</span>
+                      <span>{formatDate(doc.createdAt)}</span>
+                      {doc.chunkCount > 0 && (
+                        <>
+                          <span>·</span>
+                          <span className="font-medium text-neutral-700">
+                            {doc.chunkCount} vector chunks
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Status Badge & Actions */}
-              <div className="flex items-center gap-3">
-                {doc.status === 'processing' && (
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
-                    <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
-                    Extracting Text...
-                  </span>
-                )}
+                {/* Status Badge & Actions */}
+                <div className="flex items-center gap-3">
+                  {doc.status === 'processing' && (
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
+                      <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
+                      {isImage ? 'Transcribing OCR...' : 'Extracting Text...'}
+                    </span>
+                  )}
 
-                {doc.status === 'ready' && (
-                  <div className="flex items-center gap-2.5">
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-emerald-900">
+                  {doc.status === 'ready' && (
+                    <div className="flex items-center gap-2.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-emerald-900">
+                        <svg
+                          className="h-3.5 w-3.5 text-emerald-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Ready for RAG
+                      </span>
+                      {onSelectChatDocument && (
+                        <button
+                          onClick={() => onSelectChatDocument(doc)}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-neutral-950 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 shadow-2xs"
+                        >
+                          <span>Chat</span>
+                          <span>&rarr;</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {doc.status === 'failed' && (
+                    <button
+                      onClick={() => setSelectedDocForError(doc)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-red-900 hover:bg-red-100"
+                    >
                       <svg
-                        className="h-3.5 w-3.5 text-emerald-600"
+                        className="h-3.5 w-3.5 text-red-600"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -151,48 +211,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M5 13l4 4L19 7"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      Ready for RAG
-                    </span>
-                    {onSelectChatDocument && (
-                      <button
-                        onClick={() => onSelectChatDocument(doc)}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-neutral-950 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 shadow-2xs"
-                      >
-                        <span>Chat</span>
-                        <span>&rarr;</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {doc.status === 'failed' && (
-                  <button
-                    onClick={() => setSelectedDocForError(doc)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-red-900 hover:bg-red-100"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5 text-red-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    Failed (View Error)
-                  </button>
-                )}
+                      Failed (View Error)
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

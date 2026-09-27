@@ -13,6 +13,9 @@ export interface IDocument extends Document {
   totalTokensUsed?: number;
   extractedText?: string;
   errorReason?: string;
+  ocrConfidence?: number;
+  ocrEngine?: 'tesseract' | 'vision-llm';
+  hasLowConfidenceWarning?: boolean;
   createdAt: Date;
 }
 
@@ -68,6 +71,19 @@ const documentSchema = new Schema<IDocument>(
     errorReason: {
       type: String,
       required: false,
+    },
+    ocrConfidence: {
+      type: Number,
+      required: false,
+    },
+    ocrEngine: {
+      type: String,
+      enum: ['tesseract', 'vision-llm'],
+      required: false,
+    },
+    hasLowConfidenceWarning: {
+      type: Boolean,
+      default: false,
     },
     createdAt: {
       type: Date,

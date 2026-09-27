@@ -11,10 +11,16 @@ export const uploadMiddleware = multer({
     fileSize: MAX_FILE_SIZE,
   },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
+    const isPdf =
+      file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    const isImage =
+      file.mimetype.startsWith('image/') ||
+      /\.(jpe?g|png|webp)$/i.test(file.originalname.toLowerCase());
+
+    if (isPdf || isImage) {
       cb(null, true);
     } else {
-      cb(new ValidationError('Only PDF files (.pdf) are allowed'));
+      cb(new ValidationError('Only PDF files (.pdf) and images (.jpg, .jpeg, .png, .webp) are allowed'));
     }
   },
 });
