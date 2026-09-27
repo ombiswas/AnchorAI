@@ -94,7 +94,10 @@ export class OcrService {
               console.log('[ocr] Successfully transcribed handwritten notes using OpenAI Vision.');
             }
           } catch (visionErr) {
-            console.error('[ocr] Vision LLM fallback failed, reverting to Tesseract text:', visionErr);
+            console.error(
+              '[ocr] Vision LLM fallback failed, reverting to Tesseract text:',
+              visionErr
+            );
             lowConfidenceWarning = true;
           }
         } else {

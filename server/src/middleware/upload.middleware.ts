@@ -20,7 +20,11 @@ export const uploadMiddleware = multer({
     if (isPdf || isImage) {
       cb(null, true);
     } else {
-      cb(new ValidationError('Only PDF files (.pdf) and images (.jpg, .jpeg, .png, .webp) are allowed'));
+      cb(
+        new ValidationError(
+          'Only PDF files (.pdf) and images (.jpg, .jpeg, .png, .webp) are allowed'
+        )
+      );
     }
   },
 });

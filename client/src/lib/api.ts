@@ -168,6 +168,41 @@ class ApiClient {
       });
     },
   };
+
+  public readonly quiz = {
+    generate: async (
+      payload: import('../types/quiz.types').GenerateQuizRequest
+    ): Promise<import('../types/quiz.types').GenerateQuizResponse> => {
+      return this.request<import('../types/quiz.types').GenerateQuizResponse>('/quiz/generate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    getForTaking: async (
+      id: string
+    ): Promise<{ quiz: import('../types/quiz.types').QuizForTaking }> => {
+      return this.request<{ quiz: import('../types/quiz.types').QuizForTaking }>(`/quiz/${id}`, {
+        method: 'GET',
+      });
+    },
+
+    submit: async (
+      id: string,
+      answers: import('../types/quiz.types').AnswerSubmission[]
+    ): Promise<import('../types/quiz.types').SubmitQuizResponse> => {
+      return this.request<import('../types/quiz.types').SubmitQuizResponse>(`/quiz/${id}/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ answers }),
+      });
+    },
+
+    list: async (): Promise<import('../types/quiz.types').QuizListResponse> => {
+      return this.request<import('../types/quiz.types').QuizListResponse>('/quiz', {
+        method: 'GET',
+      });
+    },
+  };
 }
 
 export const api = new ApiClient();

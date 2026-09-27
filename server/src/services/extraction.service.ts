@@ -91,8 +91,7 @@ export class ExtractionService {
 
     // 4. Generate vector embeddings in batches via OpenAI text-embedding-3-small
     const chunkTexts = tokenChunks.map((c) => c.text);
-    const { embeddings, totalTokens } =
-      await embeddingService.generateBatchEmbeddings(chunkTexts);
+    const { embeddings, totalTokens } = await embeddingService.generateBatchEmbeddings(chunkTexts);
 
     // 5. Assemble and insert chunks with embeddings into MongoDB
     const chunkDocuments = tokenChunks.map((chunk, index) => ({

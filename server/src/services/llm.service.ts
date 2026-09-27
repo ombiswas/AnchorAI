@@ -45,7 +45,9 @@ export class LlmService {
     if (activeProvider === 'groq' && this.groq) {
       try {
         if (preferredProvider === 'openai') {
-          console.log('[llm] Preferred provider OpenAI is not configured; using available Groq API.');
+          console.log(
+            '[llm] Preferred provider OpenAI is not configured; using available Groq API.'
+          );
         }
         const modelToTry = config.groqModel;
         console.log(`[llm] Calling Groq API (${modelToTry})...`);
@@ -64,7 +66,9 @@ export class LlmService {
         } catch (groqErr) {
           const err = groqErr as { status?: number; error?: { error?: { code?: string } } };
           if (err.status === 404 || err.error?.error?.code === 'model_not_found') {
-            console.warn(`[llm] Model ${modelToTry} not available. Retrying with openai/gpt-oss-20b...`);
+            console.warn(
+              `[llm] Model ${modelToTry} not available. Retrying with openai/gpt-oss-20b...`
+            );
             const fallbackResponse = await this.groq.chat.completions.create({
               model: 'openai/gpt-oss-20b',
               messages: [
@@ -74,7 +78,9 @@ export class LlmService {
               temperature,
               max_tokens: 1024,
             });
-            return fallbackResponse.choices[0]?.message?.content || "I don't know based on your notes.";
+            return (
+              fallbackResponse.choices[0]?.message?.content || "I don't know based on your notes."
+            );
           }
           throw groqErr;
         }
@@ -88,7 +94,9 @@ export class LlmService {
     if (activeProvider === 'openai' && this.openai) {
       try {
         if (preferredProvider === 'groq') {
-          console.log('[llm] Preferred provider Groq is not configured; using available OpenAI API.');
+          console.log(
+            '[llm] Preferred provider Groq is not configured; using available OpenAI API.'
+          );
         }
         console.log('[llm] Calling OpenAI API (gpt-4o-mini)...');
         const response = await this.openai.chat.completions.create({

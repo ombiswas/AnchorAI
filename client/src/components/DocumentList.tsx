@@ -6,6 +6,8 @@ interface DocumentListProps {
   isLoading: boolean;
   onRefresh: () => void;
   onSelectChatDocument?: (doc: StudyDocument) => void;
+  onSelectQuizDocument?: (doc: StudyDocument) => void;
+  onOpenQuizGenerator?: () => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -13,6 +15,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   isLoading,
   onRefresh,
   onSelectChatDocument,
+  onSelectQuizDocument,
+  onOpenQuizGenerator,
 }) => {
   const [selectedDocForError, setSelectedDocForError] = useState<StudyDocument | null>(null);
 
@@ -54,26 +58,50 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           </h2>
         </div>
 
-        <button
-          onClick={onRefresh}
-          disabled={isLoading}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 font-mono text-xs font-medium uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-100 hover:text-black disabled:opacity-50 shadow-2xs"
-        >
-          <svg
-            className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <div className="flex items-center gap-2">
+          {onOpenQuizGenerator && documents.some((d) => d.status === 'ready') && (
+            <button
+              onClick={onOpenQuizGenerator}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-indigo-300 bg-indigo-50 px-3 font-mono text-xs font-semibold uppercase tracking-wider text-indigo-800 transition hover:bg-indigo-100 shadow-2xs"
+            >
+              <svg
+                className="h-3.5 w-3.5 text-indigo-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+              Create Quiz
+            </button>
+          )}
+
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 font-mono text-xs font-medium uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-100 hover:text-black disabled:opacity-50 shadow-2xs"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Refresh
-        </button>
+            <svg
+              className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Document Items or Empty State */}
@@ -168,23 +196,28 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   )}
 
                   {doc.status === 'ready' && (
-                    <div className="flex items-center gap-2.5">
-                      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-emerald-900">
-                        <svg
-                          className="h-3.5 w-3.5 text-emerald-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                    <div className="flex items-center gap-2">
+                      {onSelectQuizDocument && (
+                        <button
+                          onClick={() => onSelectQuizDocument(doc)}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-indigo-300 bg-white px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-indigo-700 transition hover:bg-indigo-50 shadow-2xs"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        Ready for RAG
-                      </span>
+                          <svg
+                            className="h-3.5 w-3.5 text-indigo-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
+                          </svg>
+                          <span>Quiz</span>
+                        </button>
+                      )}
                       {onSelectChatDocument && (
                         <button
                           onClick={() => onSelectChatDocument(doc)}
