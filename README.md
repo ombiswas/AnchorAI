@@ -172,3 +172,59 @@ npm run preview  # (Optional) Locally test the production build at http://localh
 3. Set `CLIENT_URL=https://<client-domain>` on the server environment so CORS allows the web app.
 4. Supply production `MONGODB_URI`, `JWT_SECRET`, Cloudinary credentials, and active LLM API keys.
 
+---
+
+### 4. Docker Deployment
+
+AnchorAI provides Docker configurations for both multi-container orchestration and single-container full-stack deployments.
+
+#### Option A: Docker Compose (Multi-Container: Frontend + Backend + MongoDB)
+
+Runs MongoDB, the Express backend, and the Nginx-served frontend in isolated containers:
+
+```bash
+# 1. Start all services in the background
+docker compose up -d --build
+
+# 2. View streaming logs
+docker compose logs -f
+
+# 3. Stop all services
+docker compose down
+```
+
+- **Frontend Client:** Available at `http://localhost` (or port specified via `CLIENT_PORT`)
+- **Backend API:** Available at `http://localhost:5000`
+- **MongoDB:** Available at `localhost:27017` (data persisted in `mongo_data` volume)
+
+#### Option B: Unified Single-Container (Root Dockerfile)
+
+Builds the entire application (frontend + backend) into a single container where Express serves both the API and SPA static assets. Ideal for single-port PaaS hosts (Render, Railway, Fly.io, Cloud Run):
+
+```bash
+# Build the unified image
+docker build -t anchorai .
+
+# Run container (pass your env variables)
+docker run -p 5000:5000 \
+  -e MONGODB_URI="your-mongodb-uri" \
+  -e JWT_SECRET="your-jwt-secret" \
+  -e OPENAI_API_KEY="your-openai-key" \
+  anchorai
+```
+
+#### Option C: Standalone Client or Server Containers
+
+Build and run individual microservice containers:
+
+```bash
+# Server only
+docker build -t anchorai-server ./server
+docker run -p 5000:5000 -e MONGODB_URI="..." -e JWT_SECRET="..." anchorai-server
+
+# Client only (baked with API URL)
+docker build --build-arg VITE_API_URL="https://api.yourdomain.com/api" -t anchorai-client ./client
+docker run -p 80:80 anchorai-client
+```
+
+

@@ -12,6 +12,7 @@ export const authRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => req.ip ?? 'unknown',
   handler: (_req, res) => {
     res.status(429).json({

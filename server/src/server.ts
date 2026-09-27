@@ -1,7 +1,8 @@
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
+import fs from 'fs';
 import path from 'path';
 import { connectDB } from './config/db';
 import { config } from './config/index';
@@ -41,6 +42,18 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Optional: Serve static SPA frontend in unified full-stack deployments (if client-dist exists)
+const clientDistPath = path.join(process.cwd(), 'client-dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path === '/health') {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // Catch-all 404 handler for undefined routes (returns consistent JSON error shape)
 app.use((req: Request, res: Response) => {
