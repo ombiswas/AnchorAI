@@ -15,25 +15,39 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         {/* Brand Logo & Name */}
         <div
           onClick={() => onNavigate('home')}
-          className="flex cursor-pointer items-center gap-2.5 transition hover:opacity-80"
+          className="flex cursor-pointer items-center gap-2.5 transition hover:opacity-85"
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-[4px] bg-black text-white">
-            <span className="font-mono text-xs font-bold tracking-tight">⚓</span>
+          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-zinc-950 text-white shadow-2xs">
+            <svg
+              className="h-3.5 w-3.5 text-white"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="5" r="3" />
+              <line x1="12" y1="22" x2="12" y2="8" />
+              <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
+            </svg>
           </div>
-          <span className="text-lg font-medium tracking-tight text-neutral-950">
+          <span className="font-heading text-[16px] font-semibold tracking-tight text-zinc-950">
             Anchor
-            <span className="font-mono text-xs uppercase tracking-widest text-neutral-500">AI</span>
+            <span className="ml-0.5 font-mono text-[11px] font-normal uppercase tracking-wider text-zinc-500">
+              AI
+            </span>
           </span>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav className="flex items-center gap-1.5 sm:gap-3">
           <button
             onClick={() => onNavigate('home')}
-            className={`rounded-[4px] px-3 py-1.5 text-xs font-medium transition ${
+            className={`btn-press rounded-md px-3 py-1.5 font-body text-[13px] font-medium transition-colors ${
               currentView === 'home'
-                ? 'bg-neutral-100 text-neutral-950'
-                : 'text-neutral-600 hover:text-neutral-950'
+                ? 'bg-zinc-100 text-zinc-950 font-semibold'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
             }`}
           >
             Overview
@@ -41,42 +55,42 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
           <button
             onClick={() => onNavigate('workspace')}
-            className={`rounded-[4px] px-3 py-1.5 text-xs font-medium transition ${
+            className={`btn-press rounded-md px-3 py-1.5 font-body text-[13px] font-medium transition-colors ${
               currentView === 'workspace'
-                ? 'bg-neutral-100 text-neutral-950'
-                : 'text-neutral-600 hover:text-neutral-950'
+                ? 'bg-zinc-100 text-zinc-950 font-semibold'
+                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50'
             }`}
           >
             Workspace
           </button>
 
           {isAuthenticated ? (
-            <div className="ml-2 flex items-center gap-3 border-l border-neutral-200 pl-3">
-              <span className="hidden font-mono text-[11px] text-neutral-600 sm:inline-block">
+            <div className="ml-2 flex items-center gap-2.5 border-l border-zinc-200 pl-3">
+              <span className="hidden font-mono text-[11px] text-zinc-600 sm:inline-block">
                 {user?.name}
               </span>
               <button
                 onClick={logout}
-                className="rounded-[4px] border border-neutral-300 bg-white px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-neutral-800 transition hover:bg-neutral-50"
+                className="btn-press rounded-md border border-zinc-200 bg-white px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-700 transition hover:bg-zinc-50 hover:text-zinc-950 shadow-2xs"
               >
                 Sign Out
               </button>
             </div>
           ) : (
-            <div className="ml-2 flex items-center gap-2 border-l border-neutral-200 pl-3">
+            <div className="ml-2 flex items-center gap-2 border-l border-zinc-200 pl-3">
               <button
                 onClick={() => onNavigate('login')}
-                className={`rounded-[4px] px-3 py-1 font-mono text-xs uppercase tracking-wider transition ${
+                className={`btn-press rounded-md px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider transition ${
                   currentView === 'login'
-                    ? 'font-bold text-black'
-                    : 'text-neutral-700 hover:text-black'
+                    ? 'font-bold text-zinc-950'
+                    : 'text-zinc-600 hover:text-zinc-950'
                 }`}
               >
                 Sign In
               </button>
               <button
                 onClick={() => onNavigate('signup')}
-                className="rounded-[4px] bg-black px-3.5 py-1.5 font-mono text-xs uppercase tracking-wider text-white transition hover:bg-neutral-800"
+                className="btn-press rounded-md bg-zinc-950 px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-white transition hover:bg-zinc-800 shadow-2xs"
               >
                 Sign Up
               </button>
