@@ -172,11 +172,12 @@ class ApiClient {
   public readonly chat = {
     ask: async (
       documentId: string,
-      question: string
+      question: string,
+      allowFallback = true
     ): Promise<import('../types/chat.types').ChatResponse> => {
       return this.request<import('../types/chat.types').ChatResponse>(`/chat/${documentId}`, {
         method: 'POST',
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, allowFallback }),
       });
     },
   };

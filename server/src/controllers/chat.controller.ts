@@ -9,6 +9,7 @@ const chatQuestionSchema = z.object({
     .trim()
     .min(1, { message: 'Question cannot be empty' })
     .max(1000, { message: 'Question is too long (maximum 1000 characters)' }),
+  allowFallback: z.boolean().optional().default(true),
 });
 
 export class ChatController {
@@ -33,10 +34,15 @@ export class ChatController {
         return;
       }
 
-      const { question } = parseResult.data;
+      const { question, allowFallback } = parseResult.data;
       const documentId = req.params.documentId as string;
 
-      const result = await ragService.askQuestion(req.userId as string, documentId, question);
+      const result = await ragService.askQuestion(
+        req.userId as string,
+        documentId,
+        question,
+        allowFallback
+      );
 
       res.status(200).json(result);
     } catch (error) {

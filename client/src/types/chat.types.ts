@@ -1,3 +1,5 @@
+export type ChatResponseMode = 'grounded' | 'general';
+
 export interface CitedSource {
   chunkIndex: number;
   page?: number;
@@ -15,6 +17,7 @@ export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
+  mode?: ChatResponseMode;
   sources?: CitedSource[];
   latency?: ChatLatency;
   timestamp: string;
@@ -25,5 +28,6 @@ export interface ChatResponse {
   sources: CitedSource[];
   documentId: string;
   question: string;
+  mode: ChatResponseMode;
   latency: ChatLatency;
 }

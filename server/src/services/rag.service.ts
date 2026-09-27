@@ -6,6 +6,48 @@ import { NotFoundError, ValidationError } from '../utils/errors';
 import { embeddingService } from './embedding.service';
 import { llmService } from './llm.service';
 
+export type ChatResponseMode = 'grounded' | 'general';
+
+/**
+ * Cosine similarity threshold to determine whether any retrieved chunk provides
+ * sufficient topical grounding for strict RAG answering.
+ *
+ * Rationale:
+ * With OpenAI 'text-embedding-3-small' (or normalized embeddings), relevant semantic matches
+ * typically score between 0.38 and 0.85+. Tangential or out-of-domain queries typically drop
+ * below 0.30. Setting this threshold at 0.35 reliably distinguishes queries that have at least
+ * partial grounding in the student's notes from questions requiring external knowledge.
+ */
+export const RAG_SIMILARITY_CONFIDENCE_THRESHOLD = 0.35;
+
+/**
+ * System prompt for strict document-grounded RAG mode.
+ * Constrains the LLM to only state what is directly verifiable in the uploaded context.
+ */
+export const STRICT_RAG_SYSTEM_PROMPT = `You are AnchorAI, a precise and rigorous AI study companion.
+Your task is to answer the student's question strictly and exclusively based on the lecture notes and document excerpts provided below.
+
+Strict Grounding Rules:
+1. Answer ONLY from the provided context. Do NOT use outside knowledge, speculations, or general assumptions.
+2. If the answer cannot be found in or directly inferred from the provided context, you MUST state exactly: "I don't know based on your notes."
+3. Cite page numbers or source references whenever citing specific claims or formulas.
+4. Keep explanations clear, academic, and well-structured.`;
+
+/**
+ * System prompt for fallback general-knowledge mode.
+ * Explicitly directs the LLM to provide high-yield academic assistance without fabricating
+ * document citations or pretending the content came from the student's materials.
+ */
+export const GENERAL_KNOWLEDGE_SYSTEM_PROMPT = `You are AnchorAI, an expert academic tutor and study companion.
+The student is studying a document but asked a question that is NOT covered in their uploaded materials or lecture notes.
+
+General Knowledge Rules:
+1. Explain the requested concept thoroughly, accurately, and pedagogically using your general academic knowledge.
+2. Clearly and honestly clarify at the start that this topic is not in their uploaded notes, but provide the complete conceptual explanation to assist their learning.
+3. NEVER pretend, imply, or hallucinate that this explanation came from the student's uploaded document or lecture slides.
+4. Structure the response cleanly with key definitions, core mechanisms, and a concrete example.
+5. Do NOT include fake citations or page numbers.`;
+
 export interface CitedSource {
   chunkIndex: number;
   page?: number;
@@ -18,6 +60,7 @@ export interface RagResponse {
   sources: CitedSource[];
   documentId: string;
   question: string;
+  mode: ChatResponseMode;
   latency: {
     retrievalMs: number;
     llmMs: number;
@@ -28,11 +71,14 @@ export interface RagResponse {
 export class RagService {
   /**
    * Performs semantic retrieval, prompt assembly, and grounded LLM completion.
+   * If retrieved chunks do not clear the similarity threshold, falls back to
+   * general-knowledge mode (if enabled) with an explicit fallback prompt.
    */
   public async askQuestion(
     userId: string,
     documentId: string,
-    rawQuestion: string
+    rawQuestion: string,
+    allowFallback = true
   ): Promise<RagResponse> {
     const startTime = Date.now();
 
@@ -69,20 +115,27 @@ export class RagService {
     const topChunks = await this.retrieveTopChunks(userId, documentId, queryEmbedding, 5);
     const retrievalMs = Date.now() - retrievalStart;
 
+    const maxScore = topChunks.length > 0 ? (topChunks[0]?.score || 0) : 0;
+    const hasGroundedContext =
+      topChunks.length > 0 && maxScore >= RAG_SIMILARITY_CONFIDENCE_THRESHOLD;
+
     console.log(
-      `[rag] Retrieved ${topChunks.length} chunks for doc ${documentId} in ${retrievalMs}ms`
+      `[rag] Retrieved ${topChunks.length} chunks for doc ${documentId} in ${retrievalMs}ms (max similarity: ${maxScore.toFixed(3)})`
     );
 
-    // 4. Check if relevant context was found
-    const hasRelevantContext = topChunks.length > 0 && (topChunks[0]?.score || 0) > 0.15;
-
     let answer = '';
+    let mode: ChatResponseMode = 'grounded';
+    let sources: CitedSource[] = [];
     const llmStart = Date.now();
 
-    if (!hasRelevantContext) {
-      answer = "I don't know based on your notes. No relevant content was found in this document.";
-    } else {
-      // 5. Construct grounded prompt with strict constraints
+    // 4. Branch strictly between grounded RAG and general-knowledge fallback
+    if (hasGroundedContext) {
+      // MODE: GROUNDED — At least one chunk cleared the similarity confidence threshold
+      mode = 'grounded';
+      console.log(
+        `[chat] Response mode: GROUNDED (topScore: ${maxScore.toFixed(3)} >= threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
+      );
+
       const contextBlocks = topChunks
         .map(
           (item, idx) =>
@@ -90,43 +143,60 @@ export class RagService {
         )
         .join('\n\n---\n\n');
 
-      const systemPrompt = `You are AnchorAI, a precise and rigorous AI study companion.
-Your task is to answer the student's question strictly and exclusively based on the lecture notes and document excerpts provided below.
-
-Strict Grounding Rules:
-1. Answer ONLY from the provided context. Do NOT use outside knowledge, speculations, or general assumptions.
-2. If the answer cannot be found in or directly inferred from the provided context, you MUST state exactly: "I don't know based on your notes."
-3. Cite page numbers or source references whenever citing specific claims or formulas.
-4. Keep explanations clear, academic, and well-structured.`;
-
       const userPrompt = `Document Excerpts:\n${contextBlocks}\n\nStudent Question:\n${question}`;
 
       answer = await llmService.generateCompletion({
-        systemPrompt,
+        systemPrompt: STRICT_RAG_SYSTEM_PROMPT,
         userPrompt,
         temperature: 0.1, // low temperature for maximum grounding and factual adherence
       });
+
+      sources = topChunks.map((c) => ({
+        chunkIndex: c.chunk.metadata.chunkIndex,
+        page: c.chunk.metadata.page,
+        textSnippet: c.chunk.text.slice(0, 180) + (c.chunk.text.length > 180 ? '...' : ''),
+        similarityScore: Math.round(c.score * 1000) / 1000,
+      }));
+    } else if (allowFallback) {
+      // MODE: GENERAL FALLBACK — None cleared the threshold, but fallback is enabled
+      mode = 'general';
+      console.log(
+        `[chat] Response mode: GENERAL (fallback triggered, topScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
+      );
+
+      const userPrompt = `Current Document: "${doc.title}" (Subject: ${doc.subject || 'General'})\nStudent Question: ${question}\n\nPlease explain this concept clearly with definitions, mechanisms, and examples.`;
+
+      answer = await llmService.generateCompletion({
+        systemPrompt: GENERAL_KNOWLEDGE_SYSTEM_PROMPT,
+        userPrompt,
+        temperature: 0.4, // slightly higher temperature for helpful academic tutoring
+      });
+
+      // No fake sources or citations are returned in general-knowledge mode
+      sources = [];
+    } else {
+      // Strict mode with no fallback permitted: state inability based on notes
+      mode = 'grounded';
+      console.log(
+        `[chat] Response mode: GROUNDED (fallback disabled by user, topScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
+      );
+      answer = "I don't know based on your notes. No relevant content was found in this document.";
+      sources = [];
     }
 
     const llmMs = Date.now() - llmStart;
     const totalMs = Date.now() - startTime;
 
     console.log(
-      `[rag] Question answered for doc ${documentId}. Retrieval: ${retrievalMs}ms, LLM: ${llmMs}ms, Total: ${totalMs}ms`
+      `[rag] Question completed for doc ${documentId} [mode=${mode}]. Retrieval: ${retrievalMs}ms, LLM: ${llmMs}ms, Total: ${totalMs}ms`
     );
-
-    const sources: CitedSource[] = topChunks.map((c) => ({
-      chunkIndex: c.chunk.metadata.chunkIndex,
-      page: c.chunk.metadata.page,
-      textSnippet: c.chunk.text.slice(0, 180) + (c.chunk.text.length > 180 ? '...' : ''),
-      similarityScore: Math.round(c.score * 1000) / 1000,
-    }));
 
     return {
       answer,
       sources,
       documentId,
       question,
+      mode,
       latency: {
         retrievalMs,
         llmMs,

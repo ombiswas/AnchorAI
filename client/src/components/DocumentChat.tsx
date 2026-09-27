@@ -14,6 +14,8 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [expandedSourceIndex, setExpandedSourceIndex] = useState<string | null>(null);
+  const [allowFallback, setAllowFallback] = useState<boolean>(true);
+  const [appendedGuideIds, setAppendedGuideIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -23,6 +25,10 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const handleAppendToStudyGuide = (message: ChatMessage) => {
+    setAppendedGuideIds((prev) => new Set(prev).add(message.id));
+  };
 
   const handleSendMessage = async (e?: React.FormEvent, customQuery?: string) => {
     if (e) e.preventDefault();
@@ -43,12 +49,13 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
     setIsLoading(true);
 
     try {
-      const response = await api.chat.ask(document._id, query);
+      const response = await api.chat.ask(document._id, query, allowFallback);
 
       const assistantMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',
         text: response.answer,
+        mode: response.mode,
         sources: response.sources,
         latency: response.latency,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -102,6 +109,25 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
         </div>
 
         <div className="flex items-center gap-3">
+          {/* AI Fallback Mode Toggle */}
+          <button
+            type="button"
+            onClick={() => setAllowFallback(!allowFallback)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] font-medium border transition ${
+              allowFallback
+                ? 'border-indigo-200 bg-indigo-50/80 text-indigo-900 hover:bg-indigo-100/70'
+                : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+            }`}
+            title="Toggle whether AnchorAI can fall back to general academic knowledge if your notes don't cover a question."
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                allowFallback ? 'bg-indigo-600 animate-pulse' : 'bg-neutral-400'
+              }`}
+            />
+            <span>AI Fallback: {allowFallback ? 'On' : 'Off'}</span>
+          </button>
+
           <span className="font-mono text-xs font-medium text-neutral-600">
             {document.chunkCount} Chunks
           </span>
@@ -167,108 +193,207 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({ document, onBackToLi
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-            >
+          messages.map((msg) => {
+            const isGeneralMode = msg.sender === 'assistant' && msg.mode === 'general';
+
+            return (
               <div
-                className={`max-w-[85%] rounded-lg p-5 leading-relaxed text-sm ${
-                  msg.sender === 'user'
-                    ? 'bg-neutral-900 text-white shadow-sm'
-                    : 'border border-neutral-200 bg-white text-neutral-900 shadow-2xs'
-                }`}
+                key={msg.id}
+                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
-                {/* Sender Tag */}
-                <div className="mb-2.5 flex items-center justify-between gap-6 font-mono text-xs">
-                  <span
-                    className={
-                      msg.sender === 'user'
-                        ? 'text-neutral-300 font-semibold uppercase tracking-wider'
-                        : 'text-neutral-700 font-bold uppercase tracking-wider'
-                    }
-                  >
-                    {msg.sender === 'user' ? 'You' : 'AnchorAI Assistant'}
-                  </span>
-                  <span className={msg.sender === 'user' ? 'text-neutral-300' : 'text-neutral-500'}>
-                    {msg.timestamp}
-                  </span>
-                </div>
+                <div
+                  className={`max-w-[85%] rounded-lg p-5 leading-relaxed text-sm ${
+                    msg.sender === 'user'
+                      ? 'bg-neutral-900 text-white shadow-sm'
+                      : isGeneralMode
+                        ? 'border border-amber-300/80 bg-amber-50/40 text-neutral-900 shadow-2xs'
+                        : 'border border-neutral-200 bg-white text-neutral-900 shadow-2xs'
+                  }`}
+                >
+                  {/* Sender Tag & Badges */}
+                  <div className="mb-2.5 flex items-center justify-between gap-6 font-mono text-xs">
+                    {msg.sender === 'user' ? (
+                      <span className="text-neutral-300 font-semibold uppercase tracking-wider">
+                        You
+                      </span>
+                    ) : isGeneralMode ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100/90 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-950">
+                        <svg
+                          className="h-3 w-3 text-amber-700"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                          />
+                        </svg>
+                        General Knowledge · Not in your notes
+                      </span>
+                    ) : (
+                      <span className="text-neutral-700 font-bold uppercase tracking-wider">
+                        AnchorAI Assistant
+                      </span>
+                    )}
 
-                {/* Message Body */}
-                <div className="whitespace-pre-wrap font-normal text-[14.5px] leading-relaxed">
-                  {msg.text}
-                </div>
-
-                {/* No Context Alert */}
-                {msg.sender === 'assistant' && isUnknownAnswer(msg.text) && (
-                  <div className="mt-3.5 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-                    <span className="font-semibold">Notice:</span> The retrieved excerpts from this
-                    document did not contain enough information to answer this question accurately.
+                    <span
+                      className={msg.sender === 'user' ? 'text-neutral-300' : 'text-neutral-500'}
+                    >
+                      {msg.timestamp}
+                    </span>
                   </div>
-                )}
 
-                {/* Cited Sources & Latency under AI response */}
-                {msg.sender === 'assistant' && msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-4 border-t border-neutral-200 pt-3.5">
-                    <div className="flex flex-wrap items-center justify-between gap-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
-                          Sources:
-                        </span>
-                        {msg.sources.map((src: CitedSource, idx: number) => {
-                          const sourceKey = `${msg.id}-${idx}`;
-                          const isExpanded = expandedSourceIndex === sourceKey;
+                  {/* General Knowledge Fallback Notice */}
+                  {isGeneralMode && (
+                    <div className="mb-3 rounded border border-amber-200/90 bg-amber-100/60 px-3.5 py-2 text-xs text-amber-950 leading-relaxed">
+                      <strong>Curriculum Notice:</strong> This question could not be verified in{' '}
+                      <em>{document.title}</em> with sufficient similarity confidence. The answer
+                      below is synthesized from general academic knowledge to assist your study.
+                    </div>
+                  )}
 
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => setExpandedSourceIndex(isExpanded ? null : sourceKey)}
-                              className={`rounded border px-2.5 py-1 font-mono text-xs font-medium transition ${
-                                isExpanded
-                                  ? 'border-neutral-900 bg-neutral-900 text-white'
-                                  : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:border-neutral-900 hover:bg-neutral-100'
-                              }`}
+                  {/* Message Body */}
+                  <div className="whitespace-pre-wrap font-normal text-[14.5px] leading-relaxed">
+                    {msg.text}
+                  </div>
+
+                  {/* Append to Study Guide Button for General Knowledge answers */}
+                  {isGeneralMode && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-amber-200/80 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleAppendToStudyGuide(msg)}
+                        disabled={appendedGuideIds.has(msg.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs font-semibold transition shadow-2xs active:scale-[0.98] ${
+                          appendedGuideIds.has(msg.id)
+                            ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 cursor-default'
+                            : 'border border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900 hover:bg-neutral-50'
+                        }`}
+                      >
+                        {appendedGuideIds.has(msg.id) ? (
+                          <>
+                            <svg
+                              className="h-3.5 w-3.5 text-emerald-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
                             >
-                              Page {src.page || 'N/A'} (Score {src.similarityScore})
-                            </button>
-                          );
-                        })}
-                      </div>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Appended to Study Guide
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="h-3.5 w-3.5 text-neutral-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                              />
+                            </svg>
+                            Append to Study Guide
+                          </>
+                        )}
+                      </button>
 
                       {msg.latency && (
                         <span className="font-mono text-xs font-medium text-neutral-500">
-                          ⚡ {(msg.latency.totalMs / 1000).toFixed(2)}s (Retrieval:{' '}
-                          {msg.latency.retrievalMs}ms, LLM: {msg.latency.llmMs}ms)
+                          ⚡ {(msg.latency.totalMs / 1000).toFixed(2)}s (LLM: {msg.latency.llmMs}ms)
                         </span>
                       )}
                     </div>
+                  )}
 
-                    {/* Source Excerpt Expansion */}
-                    {msg.sources.map((src: CitedSource, idx: number) => {
-                      const sourceKey = `${msg.id}-${idx}`;
-                      if (expandedSourceIndex !== sourceKey) return null;
+                  {/* No Context Alert for strict answers */}
+                  {msg.sender === 'assistant' && !isGeneralMode && isUnknownAnswer(msg.text) && (
+                    <div className="mt-3.5 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                      <span className="font-semibold">Notice:</span> The retrieved excerpts from
+                      this document did not contain enough information to answer this question
+                      accurately.
+                    </div>
+                  )}
 
-                      return (
-                        <div
-                          key={idx}
-                          className="mt-3 rounded-md border border-neutral-300 bg-neutral-100/80 p-3.5 font-mono text-xs text-neutral-800 leading-normal"
-                        >
-                          <div className="mb-1.5 flex items-center justify-between font-semibold text-neutral-600 text-[11px]">
-                            <span>
-                              CHUNK #{src.chunkIndex} · PAGE {src.page || 'N/A'}
+                  {/* Cited Sources & Latency under Grounded AI response */}
+                  {msg.sender === 'assistant' &&
+                    !isGeneralMode &&
+                    msg.sources &&
+                    msg.sources.length > 0 && (
+                      <div className="mt-4 border-t border-neutral-200 pt-3.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+                              Sources:
                             </span>
-                            <span>SIMILARITY: {src.similarityScore}</span>
+                            {msg.sources.map((src: CitedSource, idx: number) => {
+                              const sourceKey = `${msg.id}-${idx}`;
+                              const isExpanded = expandedSourceIndex === sourceKey;
+
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() =>
+                                    setExpandedSourceIndex(isExpanded ? null : sourceKey)
+                                  }
+                                  className={`rounded border px-2.5 py-1 font-mono text-xs font-medium transition ${
+                                    isExpanded
+                                      ? 'border-neutral-900 bg-neutral-900 text-white'
+                                      : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:border-neutral-900 hover:bg-neutral-100'
+                                  }`}
+                                >
+                                  Page {src.page || 'N/A'} (Score {src.similarityScore})
+                                </button>
+                              );
+                            })}
                           </div>
-                          <p className="whitespace-pre-wrap">{src.textSnippet}</p>
+
+                          {msg.latency && (
+                            <span className="font-mono text-xs font-medium text-neutral-500">
+                              ⚡ {(msg.latency.totalMs / 1000).toFixed(2)}s (Retrieval:{' '}
+                              {msg.latency.retrievalMs}ms, LLM: {msg.latency.llmMs}ms)
+                            </span>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+
+                        {/* Source Excerpt Expansion */}
+                        {msg.sources.map((src: CitedSource, idx: number) => {
+                          const sourceKey = `${msg.id}-${idx}`;
+                          if (expandedSourceIndex !== sourceKey) return null;
+
+                          return (
+                            <div
+                              key={idx}
+                              className="mt-3 rounded-md border border-neutral-300 bg-neutral-100/80 p-3.5 font-mono text-xs text-neutral-800 leading-normal"
+                            >
+                              <div className="mb-1.5 flex items-center justify-between font-semibold text-neutral-600 text-[11px]">
+                                <span>
+                                  CHUNK #{src.chunkIndex} · PAGE {src.page || 'N/A'}
+                                </span>
+                                <span>SIMILARITY: {src.similarityScore}</span>
+                              </div>
+                              <p className="whitespace-pre-wrap">{src.textSnippet}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         {/* Loading / Typing Indicator */}
