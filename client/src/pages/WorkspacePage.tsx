@@ -9,8 +9,15 @@ import { QuizGeneratorModal } from '../components/QuizGeneratorModal';
 import { QuizResultsView } from '../components/QuizResultsView';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
-import type { StudyDocument } from '../types/document.types';
+import type { DeleteDocumentResponse, StudyDocument } from '../types/document.types';
 import type { QuizAttempt, QuizForTaking, QuizFull } from '../types/quiz.types';
+
+interface DeleteToastInfo {
+  id: string;
+  title: string;
+  detail: string;
+  cascade: boolean;
+}
 
 export const WorkspacePage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -21,6 +28,8 @@ export const WorkspacePage: React.FC = () => {
 
   // Main Tabs: 'library' | 'dashboard'
   const [activeTab, setActiveTab] = useState<'library' | 'dashboard'>('library');
+  const [dashboardRefreshTrigger, setDashboardRefreshTrigger] = useState<number>(0);
+  const [deleteToast, setDeleteToast] = useState<DeleteToastInfo | null>(null);
 
   // Primer Modal State
   const [isPrimerModalOpen, setIsPrimerModalOpen] = useState<boolean>(false);
@@ -32,6 +41,14 @@ export const WorkspacePage: React.FC = () => {
   const [quizResult, setQuizResult] = useState<{ attempt: QuizAttempt; quiz: QuizFull } | null>(
     null
   );
+
+  useEffect(() => {
+    if (!deleteToast) return;
+    const timer = setTimeout(() => {
+      setDeleteToast(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [deleteToast]);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -271,17 +288,97 @@ export const WorkspacePage: React.FC = () => {
                 onSelectQuizDocument={(doc) => handleOpenGenerator(doc._id)}
                 onOpenQuizGenerator={() => handleOpenGenerator()}
                 onOpenCreatePrimer={() => setIsPrimerModalOpen(true)}
-                onDeleteDocument={(docId) => {
+                onDeleteDocument={(docId: string, result?: DeleteDocumentResponse) => {
                   setDocuments((prev) => prev.filter((d) => d._id !== docId));
+                  if (result) {
+                    if (!result.preservedHistory) {
+                      setDashboardRefreshTrigger((prev) => prev + 1);
+                    }
+                    const isCascade = !result.preservedHistory;
+                    let detail = '';
+                    if (isCascade) {
+                      if (result.deletedQuizzesCount > 0) {
+                        detail = `Cascade deleted ${result.deletedQuizzesCount} related quiz${
+                          result.deletedQuizzesCount === 1 ? '' : 'zes'
+                        } and ${result.deletedAttemptsCount} attempt${
+                          result.deletedAttemptsCount === 1 ? '' : 's'
+                        }. Mastery scores recalculated for ${result.affectedTopicsCount} topic${
+                          result.affectedTopicsCount === 1 ? '' : 's'
+                        }.`;
+                      } else {
+                        detail =
+                          'Removed document and vector chunks. No associated quizzes or attempts existed.';
+                      }
+                    } else {
+                      detail =
+                        'Removed document and vector chunks. Related quizzes and attempt history were preserved.';
+                    }
+
+                    setDeleteToast({
+                      id: Date.now().toString(),
+                      title: `"${result.deletedDocumentTitle || 'Document'}" deleted`,
+                      detail,
+                      cascade: isCascade,
+                    });
+                  }
                 }}
               />
             </div>
           ) : (
             <DashboardView
+              key={dashboardRefreshTrigger}
+              refreshTrigger={dashboardRefreshTrigger}
               onStartQuiz={handleQuizReady}
               onNavigateToLibrary={() => setActiveTab('library')}
             />
           )}
+        </div>
+      )}
+
+      {/* Confirmation Toast Notification */}
+      {deleteToast && (
+        <div className="fixed bottom-5 right-5 z-50 max-w-sm sm:max-w-md rounded-xl border border-neutral-200 bg-white p-4 shadow-xl transition-all animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div className="flex items-start gap-3">
+            <div
+              className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
+                deleteToast.cascade
+                  ? 'border-neutral-900 bg-neutral-900 text-white'
+                  : 'border-neutral-200 bg-neutral-100 text-neutral-800'
+              }`}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0 pr-1">
+              <h4 className="text-xs font-semibold text-neutral-950 tracking-tight">
+                {deleteToast.title}
+              </h4>
+              <p className="mt-1 text-xs text-neutral-600 leading-relaxed">
+                {deleteToast.detail}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeleteToast(null)}
+              className="text-neutral-400 hover:text-neutral-700 transition p-1 -mr-1 -mt-1 rounded-md"
+              aria-label="Dismiss notification"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 

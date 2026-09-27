@@ -45,3 +45,15 @@ export interface AppendSectionResponse {
   message: string;
   document: StudyDocument;
 }
+
+export interface DeleteDocumentResponse {
+  message: string;
+  deletedDocumentId: string;
+  deletedDocumentTitle: string;
+  preservedHistory: boolean;
+  deletedChunksCount: number;
+  deletedQuizzesCount: number;
+  deletedAttemptsCount: number;
+  affectedTopicsCount: number;
+  affectedTopicTags: string[];
+}

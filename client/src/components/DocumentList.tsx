@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import type { StudyDocument } from '../types/document.types';
+import type { DeleteDocumentResponse, StudyDocument } from '../types/document.types';
 
 interface DocumentListProps {
   documents: StudyDocument[];
@@ -10,7 +10,7 @@ interface DocumentListProps {
   onSelectQuizDocument?: (doc: StudyDocument) => void;
   onOpenQuizGenerator?: () => void;
   onOpenCreatePrimer?: () => void;
-  onDeleteDocument?: (docId: string) => void;
+  onDeleteDocument?: (docId: string, result?: DeleteDocumentResponse) => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -25,8 +25,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 }) => {
   const [selectedDocForError, setSelectedDocForError] = useState<StudyDocument | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<StudyDocument | null>(null);
+  const [cascadeDelete, setCascadeDelete] = useState<boolean>(true);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleInitiateDelete = (doc: StudyDocument) => {
+    setDeleteError(null);
+    setCascadeDelete(true);
+    setDocumentToDelete(doc);
+  };
 
   // Auto-poll if any document is currently in 'processing' status
   useEffect(() => {
@@ -58,9 +65,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      await api.documents.delete(documentToDelete._id);
-      onDeleteDocument?.(documentToDelete._id);
+      const preserveHistory = !cascadeDelete;
+      const result = await api.documents.delete(documentToDelete._id, preserveHistory);
+      onDeleteDocument?.(documentToDelete._id, result);
       setDocumentToDelete(null);
+      setCascadeDelete(true);
     } catch (err) {
       setDeleteError((err as Error).message || 'Failed to delete document from study library');
     } finally {
@@ -326,10 +335,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       )}
                       <button
                         type="button"
-                        onClick={() => {
-                          setDeleteError(null);
-                          setDocumentToDelete(doc);
-                        }}
+                        onClick={() => handleInitiateDelete(doc)}
                         className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 shadow-2xs"
                         title="Delete from study library"
                       >
@@ -373,10 +379,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          setDeleteError(null);
-                          setDocumentToDelete(doc);
-                        }}
+                        onClick={() => handleInitiateDelete(doc)}
                         className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 shadow-2xs"
                         title="Delete from study library"
                       >
@@ -456,6 +459,26 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             <p className="mt-3 text-sm text-neutral-600 leading-relaxed">
               Are you sure you want to delete <strong className="text-neutral-900 font-semibold">{documentToDelete.title}</strong>? All associated study notes, chat context, and vector embeddings will be permanently removed.
             </p>
+
+            <label className="mt-4 flex items-start gap-3 rounded-lg border border-neutral-200 bg-neutral-50/80 p-3 select-none cursor-pointer transition hover:bg-neutral-100/60">
+              <input
+                type="checkbox"
+                id="cascade-delete-checkbox"
+                checked={cascadeDelete}
+                onChange={(e) => setCascadeDelete(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-neutral-900 accent-neutral-900 focus:ring-neutral-900"
+              />
+              <div className="flex flex-col text-xs">
+                <span className="font-medium text-neutral-900 leading-snug">
+                  Also delete all related quizzes, attempts, and reset associated topic scores
+                </span>
+                <span className="mt-1 text-[11px] text-neutral-500 leading-normal">
+                  {cascadeDelete
+                    ? 'Recommended: Cleans up quizzes generated from this document and recalculates your topic mastery from surviving attempts.'
+                    : 'Opt-out: Keeps all generated quizzes, past attempts, and mastery metrics in your dashboard intact.'}
+                </span>
+              </div>
+            </label>
 
             {deleteError && (
               <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-2.5 text-xs text-red-900">

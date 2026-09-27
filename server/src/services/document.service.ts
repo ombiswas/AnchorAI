@@ -1,8 +1,11 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { uploadFileBuffer } from '../config/cloudinary';
 import { ChunkModel } from '../models/chunk.model';
 import { DocumentModel, IDocument } from '../models/document.model';
+import { QuizModel } from '../models/quiz.model';
+import { QuizAttemptModel } from '../models/quizAttempt.model';
 import { NotFoundError, ValidationError } from '../utils/errors';
+import { recalculateTopicMastery } from './analytics.service';
 import { extractionService } from './extraction.service';
 import { llmService } from './llm.service';
 import { ocrService } from './ocr.service';
@@ -15,6 +18,18 @@ export interface UploadDocumentDto {
 export interface CreatePrimerDto {
   topic: string;
   subject?: string;
+}
+
+export interface DeleteDocumentResult {
+  message: string;
+  deletedDocumentId: string;
+  deletedDocumentTitle: string;
+  preservedHistory: boolean;
+  deletedChunksCount: number;
+  deletedQuizzesCount: number;
+  deletedAttemptsCount: number;
+  affectedTopicsCount: number;
+  affectedTopicTags: string[];
 }
 
 export class DocumentService {
@@ -299,38 +314,221 @@ Rules:
   }
 
   /**
-   * Deletes a study document and cascades deletion to all its vector chunks.
+   * Deletes a study document and cascades deletion to vector chunks, and optionally
+   * to associated quizzes, attempts, and recalculated topic mastery.
    *
    * Architectural Decisions Explained:
    * 1. Strict Ownership Enforcement: Verifies documentId belongs to the requesting userId before
    *    executing any mutation.
-   * 2. Cascading Vector Chunk Cleanup: Removes all corresponding chunks in ChunkModel associated with
-   *    this documentId. This prevents orphaned vector embeddings from consuming database storage
-   *    or creating phantom results in vector similarity queries.
+   * 2. Cascade by Default with History Preservation Opt-out:
+   *    - When preserveHistory is false (default): Deletes the document, its vector chunks,
+   *      any Quiz documents where sourceDocumentIds contains this document, and all associated
+   *      QuizAttempts. Then re-derives rolling accuracy for all affected topicTags via recalculateTopicMastery.
+   *    - When preserveHistory is true: Deletes only the document and chunks, leaving quizzes, attempts,
+   *      and analytics untouched.
+   * 3. Transaction Safety with Standalone Fallback:
+   *    Executes the deletion within a MongoDB multi-document transaction session if supported by the cluster
+   *    (e.g., MongoDB Atlas / replica sets). If the deployment is a local standalone MongoDB instance without
+   *    replica set support, gracefully falls back to sequential deletion so operations never fail arbitrarily.
+   * 4. Single Mutation Point for Mastery:
+   *    Delegates directly to recalculateTopicMastery, keeping all mastery calculation and pruning logic in
+   *    one single source of truth without duplication.
    */
-  public async deleteDocument(userId: string, documentId: string): Promise<void> {
+  public async deleteDocument(
+    userId: string,
+    documentId: string,
+    preserveHistory: boolean = false
+  ): Promise<DeleteDocumentResult> {
     if (!Types.ObjectId.isValid(documentId)) {
       throw new ValidationError('Invalid document ID format');
     }
 
+    const userObjectId = new Types.ObjectId(userId);
+    const docObjectId = new Types.ObjectId(documentId);
+
+    // Ownership check: Verify document belongs to the requesting user
     const doc = await DocumentModel.findOne({
-      _id: new Types.ObjectId(documentId),
-      userId: new Types.ObjectId(userId),
+      _id: docObjectId,
+      userId: userObjectId,
     });
 
     if (!doc) {
       throw new NotFoundError('Document not found or access denied');
     }
 
-    // 1. Cascade delete all vector chunks belonging to this document
-    const chunkDeleteResult = await ChunkModel.deleteMany({ documentId: doc._id });
+    // Branch 1: History preserved (opt-out of cascade)
+    if (preserveHistory) {
+      const chunkDeleteResult = await ChunkModel.deleteMany({ documentId: doc._id });
+      await DocumentModel.deleteOne({ _id: doc._id });
+
+      console.log(
+        `[document] Deleted document ${documentId} (userId: ${userId}) preserving quiz history. Deleted ${chunkDeleteResult.deletedCount} chunks.`
+      );
+
+      return {
+        message:
+          'Document deleted successfully. Related quizzes, attempts, and topic scores were preserved.',
+        deletedDocumentId: documentId,
+        deletedDocumentTitle: doc.title,
+        preservedHistory: true,
+        deletedChunksCount: chunkDeleteResult.deletedCount || 0,
+        deletedQuizzesCount: 0,
+        deletedAttemptsCount: 0,
+        affectedTopicsCount: 0,
+        affectedTopicTags: [],
+      };
+    }
+
+    // Branch 2: Cascade by default
+    // 1. Identify all related quizzes belonging to this user that reference this document
+    const relatedQuizzes = await QuizModel.find({
+      userId: userObjectId,
+      sourceDocumentIds: doc._id,
+    }).exec();
+
+    const relatedQuizIds = relatedQuizzes.map((q) => q._id);
+
+    // 2. Identify all quiz attempts for these quizzes
+    const relatedAttempts =
+      relatedQuizIds.length > 0
+        ? await QuizAttemptModel.find({
+            userId: userObjectId,
+            quizId: { $in: relatedQuizIds },
+          }).exec()
+        : [];
+
+    // 3. Collect affected topic tags before records are deleted
+    const affectedTopicsSet = new Set<string>();
+    for (const quiz of relatedQuizzes) {
+      for (const question of quiz.questions) {
+        if (question.topicTag && question.topicTag.trim()) {
+          affectedTopicsSet.add(question.topicTag.trim());
+        }
+      }
+    }
+    for (const attempt of relatedAttempts) {
+      for (const topicResult of attempt.perTopicResult) {
+        if (topicResult.topicTag && topicResult.topicTag.trim()) {
+          affectedTopicsSet.add(topicResult.topicTag.trim());
+        }
+      }
+    }
+    const affectedTopicTags = Array.from(affectedTopicsSet);
+
+    // 4. Execute atomic deletion within a transaction if supported, else fallback gracefully
+    let deletedChunksCount = 0;
+    let deletedQuizzesCount = 0;
+    let deletedAttemptsCount = 0;
+
+    let session: mongoose.ClientSession | null = null;
+    let useTransaction = false;
+
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+      useTransaction = true;
+    } catch {
+      // Standalone MongoDB without replica set
+      session = null;
+      useTransaction = false;
+    }
+
+    try {
+      if (useTransaction && session) {
+        try {
+          const chunkRes = await ChunkModel.deleteMany({ documentId: doc._id }, { session });
+          deletedChunksCount = chunkRes.deletedCount || 0;
+
+          if (relatedQuizIds.length > 0) {
+            const attemptRes = await QuizAttemptModel.deleteMany(
+              { quizId: { $in: relatedQuizIds } },
+              { session }
+            );
+            deletedAttemptsCount = attemptRes.deletedCount || 0;
+
+            const quizRes = await QuizModel.deleteMany(
+              { _id: { $in: relatedQuizIds } },
+              { session }
+            );
+            deletedQuizzesCount = quizRes.deletedCount || 0;
+          }
+
+          await DocumentModel.deleteOne({ _id: doc._id }, { session });
+          await session.commitTransaction();
+        } catch (txError) {
+          await session.abortTransaction();
+          const errorMsg = (txError as Error).message || '';
+          if (
+            errorMsg.includes('replica set') ||
+            errorMsg.includes('Transaction numbers are only allowed')
+          ) {
+            console.warn(
+              '[document] Standalone MongoDB detected. Falling back to non-transactional cascade deletion.'
+            );
+            useTransaction = false;
+          } else {
+            throw txError;
+          }
+        }
+      }
+
+      // Fallback if transaction was not supported
+      if (!useTransaction) {
+        const chunkRes = await ChunkModel.deleteMany({ documentId: doc._id });
+        deletedChunksCount = chunkRes.deletedCount || 0;
+
+        if (relatedQuizIds.length > 0) {
+          const attemptRes = await QuizAttemptModel.deleteMany({
+            quizId: { $in: relatedQuizIds },
+          });
+          deletedAttemptsCount = attemptRes.deletedCount || 0;
+
+          const quizRes = await QuizModel.deleteMany({
+            _id: { $in: relatedQuizIds },
+          });
+          deletedQuizzesCount = quizRes.deletedCount || 0;
+        }
+
+        await DocumentModel.deleteOne({ _id: doc._id });
+      }
+    } finally {
+      if (session) {
+        await session.endSession();
+      }
+    }
+
+    // 5. Call recalculateTopicMastery for each affected topic tag
+    for (const tag of affectedTopicTags) {
+      try {
+        await recalculateTopicMastery(userId, tag);
+      } catch (recalcError) {
+        console.error(
+          `[document] Error recalculating mastery for topic "${tag}" (userId: ${userId}):`,
+          recalcError
+        );
+      }
+    }
+
     console.log(
-      `[document] Cascade deleted ${chunkDeleteResult.deletedCount} chunks for document ${documentId}`
+      `[document] Cascade deleted document ${documentId}: ${deletedChunksCount} chunks, ${deletedQuizzesCount} quizzes, ${deletedAttemptsCount} attempts, ${affectedTopicTags.length} topics updated/pruned.`
     );
 
-    // 2. Delete the document itself
-    await DocumentModel.deleteOne({ _id: doc._id });
-    console.log(`[document] Successfully deleted document ${documentId} (userId: ${userId})`);
+    const message =
+      deletedQuizzesCount > 0
+        ? `Document deleted along with ${deletedQuizzesCount} related quiz${deletedQuizzesCount === 1 ? '' : 'zes'} and ${deletedAttemptsCount} attempt${deletedAttemptsCount === 1 ? '' : 's'}. Associated topic mastery scores were recalculated.`
+        : 'Document and vector chunks deleted successfully.';
+
+    return {
+      message,
+      deletedDocumentId: documentId,
+      deletedDocumentTitle: doc.title,
+      preservedHistory: false,
+      deletedChunksCount,
+      deletedQuizzesCount,
+      deletedAttemptsCount,
+      affectedTopicsCount: affectedTopicTags.length,
+      affectedTopicTags,
+    };
   }
 }
 

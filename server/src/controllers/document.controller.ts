@@ -124,7 +124,8 @@ export class DocumentController {
 
   /**
    * DELETE /api/documents/:id
-   * Removes a document and cascades deletion to all associated chunks.
+   * Removes a document, with cascade-by-default to associated quizzes, attempts,
+   * and topic mastery scores unless preserveHistory=true is specified.
    */
   public async delete(
     req: AuthenticatedRequest,
@@ -132,13 +133,20 @@ export class DocumentController {
     next: NextFunction
   ): Promise<void> {
     try {
-      await documentService.deleteDocument(
+      const preserveHistoryParam = req.query.preserveHistory;
+      const preserveHistoryBody = req.body?.preserveHistory;
+      const preserveHistory =
+        preserveHistoryParam === 'true' ||
+        preserveHistoryParam === '1' ||
+        preserveHistoryBody === true;
+
+      const result = await documentService.deleteDocument(
         req.userId as string,
-        req.params.id as string
+        req.params.id as string,
+        preserveHistory
       );
-      res.status(200).json({
-        message: 'Document and vector chunks deleted successfully',
-      });
+
+      res.status(200).json(result);
     } catch (error) {
       next(error);
     }

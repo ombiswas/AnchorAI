@@ -6,11 +6,13 @@ import type { QuizForTaking } from '../types/quiz.types';
 interface DashboardViewProps {
   onStartQuiz: (quiz: QuizForTaking) => void;
   onNavigateToLibrary: () => void;
+  refreshTrigger?: number;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onStartQuiz,
   onNavigateToLibrary,
+  refreshTrigger,
 }) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -32,7 +34,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   useEffect(() => {
     fetchDashboard();
-  }, [fetchDashboard]);
+  }, [fetchDashboard, refreshTrigger]);
 
   const handlePracticeWeakTopics = async (specificTopic?: string) => {
     try {

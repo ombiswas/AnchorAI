@@ -114,10 +114,16 @@ class ApiClient {
       );
     },
 
-    delete: async (id: string): Promise<{ message: string }> => {
-      return this.request<{ message: string }>(`/documents/${id}`, {
-        method: 'DELETE',
-      });
+    delete: async (
+      id: string,
+      preserveHistory: boolean = false
+    ): Promise<import('../types/document.types').DeleteDocumentResponse> => {
+      return this.request<import('../types/document.types').DeleteDocumentResponse>(
+        `/documents/${id}?preserveHistory=${preserveHistory}`,
+        {
+          method: 'DELETE',
+        }
+      );
     },
 
     upload: async (
