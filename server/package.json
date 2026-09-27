@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
-    "cleanup:orphaned": "ts-node scripts/cleanup-orphaned-quiz-data.ts"
+    "cleanup:orphaned": "ts-node scripts/cleanup-orphaned-quiz-data.ts",
+    "test:cascade": "ts-node scripts/test-cascade-recalculation.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
