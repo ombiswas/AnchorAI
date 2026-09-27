@@ -27,23 +27,57 @@ export class LlmService {
    */
   public async generateCompletion(options: LlmCompletionOptions): Promise<string> {
     const { systemPrompt, userPrompt, temperature = 0.1 } = options;
-    const provider = config.llmProvider;
+    const preferredProvider = config.llmProvider;
+    const activeProvider =
+      preferredProvider === 'groq'
+        ? this.groq
+          ? 'groq'
+          : this.openai
+            ? 'openai'
+            : null
+        : this.openai
+          ? 'openai'
+          : this.groq
+            ? 'groq'
+            : null;
 
     // 1. Groq Provider
-    if (provider === 'groq' && this.groq) {
+    if (activeProvider === 'groq' && this.groq) {
       try {
-        console.log('[llm] Calling Groq API (llama-3.3-70b-versatile)...');
-        const response = await this.groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature,
-          max_tokens: 1024,
-        });
+        if (preferredProvider === 'openai') {
+          console.log('[llm] Preferred provider OpenAI is not configured; using available Groq API.');
+        }
+        const modelToTry = config.groqModel;
+        console.log(`[llm] Calling Groq API (${modelToTry})...`);
+        try {
+          const response = await this.groq.chat.completions.create({
+            model: modelToTry,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature,
+            max_tokens: 1024,
+          });
 
-        return response.choices[0]?.message?.content || "I don't know based on your notes.";
+          return response.choices[0]?.message?.content || "I don't know based on your notes.";
+        } catch (groqErr) {
+          const err = groqErr as { status?: number; error?: { error?: { code?: string } } };
+          if (err.status === 404 || err.error?.error?.code === 'model_not_found') {
+            console.warn(`[llm] Model ${modelToTry} not available. Retrying with openai/gpt-oss-20b...`);
+            const fallbackResponse = await this.groq.chat.completions.create({
+              model: 'openai/gpt-oss-20b',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+              temperature,
+              max_tokens: 1024,
+            });
+            return fallbackResponse.choices[0]?.message?.content || "I don't know based on your notes.";
+          }
+          throw groqErr;
+        }
       } catch (error) {
         console.error('[llm] Groq API call failed:', error);
         throw error;
@@ -51,8 +85,11 @@ export class LlmService {
     }
 
     // 2. OpenAI Provider
-    if (this.openai) {
+    if (activeProvider === 'openai' && this.openai) {
       try {
+        if (preferredProvider === 'groq') {
+          console.log('[llm] Preferred provider Groq is not configured; using available OpenAI API.');
+        }
         console.log('[llm] Calling OpenAI API (gpt-4o-mini)...');
         const response = await this.openai.chat.completions.create({
           model: 'gpt-4o-mini',

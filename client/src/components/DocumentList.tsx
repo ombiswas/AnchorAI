@@ -42,14 +42,14 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   };
 
   return (
-    <div className="rounded-[4px] border border-neutral-200 bg-white shadow-sm">
+    <div className="rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-200/80 px-6 py-4">
+      <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50/60 px-6 py-4">
         <div>
-          <span className="font-mono text-xs font-medium uppercase tracking-[0.05em] text-neutral-500">
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
             Study Library
           </span>
-          <h2 className="mt-0.5 text-lg font-medium tracking-tight text-neutral-950">
+          <h2 className="mt-0.5 text-base font-semibold tracking-tight text-neutral-950">
             Uploaded Documents ({documents.length})
           </h2>
         </div>
@@ -57,7 +57,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-neutral-200 bg-white px-3 font-mono text-[11px] uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 font-mono text-xs font-medium uppercase tracking-wider text-neutral-700 transition hover:bg-neutral-100 hover:text-black disabled:opacity-50 shadow-2xs"
         >
           <svg
             className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`}
@@ -79,7 +79,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       {/* Document Items or Empty State */}
       {documents.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-[4px] bg-neutral-100 text-neutral-400">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -89,8 +89,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
               />
             </svg>
           </div>
-          <h3 className="mt-3 text-sm font-medium text-neutral-900">No documents uploaded yet</h3>
-          <p className="mt-1 max-w-sm text-xs text-neutral-500">
+          <h3 className="mt-3.5 text-sm font-semibold text-neutral-900">
+            No documents uploaded yet
+          </h3>
+          <p className="mt-1 max-w-sm text-xs text-neutral-600 leading-normal">
             Upload your syllabus or lecture slide PDFs above to begin ingesting text for AI study
             queries.
           </p>
@@ -100,20 +102,18 @@ export const DocumentList: React.FC<DocumentListProps> = ({
           {documents.map((doc) => (
             <div
               key={doc._id}
-              className="flex flex-col gap-3 p-5 transition hover:bg-neutral-50/60 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 p-5 transition hover:bg-neutral-50/70 sm:flex-row sm:items-center sm:justify-between"
             >
               {/* Document Info */}
               <div className="flex items-start gap-3.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] bg-neutral-100 text-neutral-700">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-neutral-100 border border-neutral-200 text-neutral-800">
                   <span className="font-mono text-xs font-bold uppercase">PDF</span>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-neutral-950 hover:underline">
-                    {doc.title}
-                  </h4>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[11px] text-neutral-500">
-                    <span className="rounded-[3px] bg-neutral-100 px-1.5 py-0.5 text-neutral-700">
+                  <h4 className="text-sm font-semibold text-neutral-950">{doc.title}</h4>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-xs text-neutral-600">
+                    <span className="rounded bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-neutral-800 font-medium">
                       {doc.subject || 'General'}
                     </span>
                     <span>·</span>
@@ -121,7 +121,9 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     {doc.chunkCount > 0 && (
                       <>
                         <span>·</span>
-                        <span>~{doc.chunkCount} chunks estimated</span>
+                        <span className="font-medium text-neutral-700">
+                          {doc.chunkCount} vector chunks
+                        </span>
                       </>
                     )}
                   </div>
@@ -131,17 +133,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
               {/* Status Badge & Actions */}
               <div className="flex items-center gap-3">
                 {doc.status === 'processing' && (
-                  <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-amber-200 bg-amber-50 px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-amber-800">
-                    <span className="h-1.5 w-1.5 animate-ping rounded-full bg-amber-500" />
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-amber-900">
+                    <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
                     Extracting Text...
                   </span>
                 )}
 
                 {doc.status === 'ready' && (
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-emerald-800">
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-emerald-900">
                       <svg
-                        className="h-3 w-3 text-emerald-600"
+                        className="h-3.5 w-3.5 text-emerald-600"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -158,7 +160,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     {onSelectChatDocument && (
                       <button
                         onClick={() => onSelectChatDocument(doc)}
-                        className="inline-flex items-center gap-1 rounded-[4px] bg-black px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-white transition hover:bg-neutral-800"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-neutral-950 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 shadow-2xs"
                       >
                         <span>Chat</span>
                         <span>&rarr;</span>
@@ -170,10 +172,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 {doc.status === 'failed' && (
                   <button
                     onClick={() => setSelectedDocForError(doc)}
-                    className="inline-flex items-center gap-1.5 rounded-[4px] border border-red-200 bg-red-50 px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider text-red-800 hover:bg-red-100"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1 font-mono text-xs font-medium uppercase tracking-wider text-red-900 hover:bg-red-100"
                   >
                     <svg
-                      className="h-3 w-3 text-red-600"
+                      className="h-3.5 w-3.5 text-red-600"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -197,20 +199,20 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       {/* Error Details Modal */}
       {selectedDocForError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-[4px] border border-neutral-200 bg-white p-6 shadow-lg">
-            <span className="font-mono text-xs font-medium uppercase tracking-wider text-red-600">
+          <div className="w-full max-w-md rounded-lg border border-neutral-200 bg-white p-6 shadow-xl">
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-red-600">
               Extraction Error
             </span>
-            <h3 className="mt-1 text-lg font-medium text-neutral-900">
+            <h3 className="mt-1 text-base font-semibold text-neutral-900">
               {selectedDocForError.title}
             </h3>
-            <p className="mt-3 rounded-[4px] bg-neutral-100 p-3 font-mono text-xs text-neutral-800">
+            <p className="mt-3 rounded-md bg-neutral-100 p-3 font-mono text-xs text-neutral-800 leading-normal">
               {selectedDocForError.errorReason || 'An unknown extraction failure occurred.'}
             </p>
             <div className="mt-5 flex justify-end">
               <button
                 onClick={() => setSelectedDocForError(null)}
-                className="rounded-[4px] bg-black px-4 py-1.5 font-mono text-xs uppercase tracking-wider text-white hover:bg-neutral-800"
+                className="rounded-md bg-neutral-950 px-4 py-2 font-mono text-xs uppercase tracking-wider text-white hover:bg-neutral-800"
               >
                 Close
               </button>

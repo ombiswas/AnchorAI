@@ -59,23 +59,23 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
 
   return (
     <div className="flex min-h-[calc(100vh-140px)] items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-[4px] border border-neutral-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-md rounded-lg border border-neutral-200 bg-white p-8 shadow-sm">
         {/* Eyebrow & Header */}
         <div className="mb-6">
-          <span className="font-mono text-xs font-medium uppercase tracking-[0.05em] text-neutral-500">
+          <span className="font-mono text-xs font-semibold uppercase tracking-wider text-neutral-600">
             Get Started
           </span>
-          <h1 className="mt-1 text-2xl font-medium tracking-[-0.03em] text-neutral-950">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-neutral-950">
             Create your account
           </h1>
-          <p className="mt-1 text-sm text-neutral-500">
+          <p className="mt-1.5 text-sm text-neutral-600">
             Join AnchorAI to unlock document-grounded AI study workflows.
           </p>
         </div>
 
         {/* Error Alert */}
         {activeError && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-[4px] border border-red-200 bg-red-50/70 p-3 text-sm text-red-800">
+          <div className="mb-5 flex items-start gap-2.5 rounded-md border border-red-300 bg-red-50 p-3.5 text-sm text-red-900">
             <svg
               className="mt-0.5 h-4 w-4 shrink-0 text-red-600"
               fill="none"
@@ -89,7 +89,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="text-xs font-medium">{activeError}</span>
+            <span className="text-xs font-semibold">{activeError}</span>
           </div>
         )}
 
@@ -98,7 +98,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
           <div>
             <label
               htmlFor="name"
-              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-neutral-700"
+              className="block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-800"
             >
               Full Name
             </label>
@@ -112,14 +112,14 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
                 if (formError) setFormError(null);
               }}
               placeholder="Alex Smith"
-              className="mt-1.5 w-full rounded-[4px] border border-neutral-200 bg-white px-3.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="mt-1.5 h-11 w-full rounded-md border border-neutral-300 bg-white px-3.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="email"
-              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-neutral-700"
+              className="block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-800"
             >
               Email Address
             </label>
@@ -134,14 +134,14 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
                 if (formError) setFormError(null);
               }}
               placeholder="alex@university.edu"
-              className="mt-1.5 w-full rounded-[4px] border border-neutral-200 bg-white px-3.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="mt-1.5 h-11 w-full rounded-md border border-neutral-300 bg-white px-3.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-neutral-700"
+              className="block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-800"
             >
               Password (min. 6 characters)
             </label>
@@ -156,19 +156,19 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
                 if (formError) setFormError(null);
               }}
               placeholder="••••••••••••"
-              className="mt-1.5 w-full rounded-[4px] border border-neutral-200 bg-white px-3.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="mt-1.5 h-11 w-full rounded-md border border-neutral-300 bg-white px-3.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none"
             />
           </div>
 
           <div>
             <label
-              htmlFor="confirmPassword"
-              className="block font-mono text-[11px] font-medium uppercase tracking-wider text-neutral-700"
+              htmlFor="confirm-password"
+              className="block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-800"
             >
               Confirm Password
             </label>
             <input
-              id="confirmPassword"
+              id="confirm-password"
               type="password"
               autoComplete="new-password"
               required
@@ -178,19 +178,19 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
                 if (formError) setFormError(null);
               }}
               placeholder="••••••••••••"
-              className="mt-1.5 w-full rounded-[4px] border border-neutral-200 bg-white px-3.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="mt-1.5 h-11 w-full rounded-md border border-neutral-300 bg-white px-3.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 focus:outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 flex w-full items-center justify-center rounded-[4px] bg-black py-2.5 font-mono text-xs font-medium uppercase tracking-[0.05em] text-white transition hover:bg-neutral-800 disabled:opacity-60"
+            className="mt-3 flex h-11 w-full items-center justify-center rounded-md bg-neutral-950 font-mono text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-60 shadow-sm"
           >
             {isSubmitting ? (
-              <span className="inline-flex items-center gap-2">
+              <span className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Creating account...
+                Creating Account...
               </span>
             ) : (
               'Create Account'
@@ -198,16 +198,15 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigateToLogin, onSig
           </button>
         </form>
 
-        {/* Footer Link */}
-        <div className="mt-6 border-t border-neutral-100 pt-4 text-center">
-          <p className="text-xs text-neutral-500">
+        {/* Switch to Login */}
+        <div className="mt-6 border-t border-neutral-200 pt-5 text-center">
+          <p className="text-xs text-neutral-600">
             Already have an account?{' '}
             <button
-              type="button"
               onClick={onNavigateToLogin}
-              className="font-medium text-black underline underline-offset-4 hover:text-neutral-700"
+              className="font-semibold text-neutral-950 underline underline-offset-2 hover:text-black"
             >
-              Sign in
+              Sign In &rarr;
             </button>
           </p>
         </div>

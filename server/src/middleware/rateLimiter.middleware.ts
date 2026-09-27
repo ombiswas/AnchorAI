@@ -10,9 +10,10 @@ export const chatRateLimiter = rateLimit({
   max: 30, // Limit each user to 30 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const authReq = req as AuthenticatedRequest;
-    return authReq.userId ? `user_${authReq.userId}` : req.ip || 'anonymous';
+    return authReq.userId ? `user_${authReq.userId}` : 'anonymous';
   },
   handler: (_req, res) => {
     res.status(429).json({

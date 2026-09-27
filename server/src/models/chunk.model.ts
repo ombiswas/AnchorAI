@@ -63,8 +63,7 @@ const chunkSchema = new Schema<IChunk>(
   }
 );
 
-// Compound indexes for vector search filtering and user document cleanup
+// Compound index for vector search filtering and user document cleanup
 chunkSchema.index({ documentId: 1, userId: 1 });
-chunkSchema.index({ userId: 1 });
 
 export const ChunkModel: Model<IChunk> = model<IChunk>('Chunk', chunkSchema);

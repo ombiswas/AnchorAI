@@ -49,7 +49,7 @@ const AppContent: React.FC = () => {
 
       {/* Minimalistic Wordmark Footer */}
       <footer className="border-t border-neutral-200/80 bg-white py-12 text-center">
-        <div className="mx-auto max-w-5xl px-4">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <p className="font-mono text-xs uppercase tracking-widest text-neutral-400">
             AnchorAI · AI-Native Study Platform
           </p>

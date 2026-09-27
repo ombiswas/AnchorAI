@@ -13,6 +13,7 @@ export interface AppConfig {
   llmProvider: 'openai' | 'groq';
   openaiApiKey: string;
   groqApiKey: string;
+  groqModel: string;
 }
 
 export const config: AppConfig = {
@@ -26,4 +27,5 @@ export const config: AppConfig = {
   llmProvider: process.env.LLM_PROVIDER?.toLowerCase() === 'groq' ? 'groq' : 'openai',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   groqApiKey: process.env.GROQ_API_KEY || '',
+  groqModel: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
 };
