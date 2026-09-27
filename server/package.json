@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "lint": "eslint .",
     "format": "prettier --write src",
-    "format:check": "prettier --check src"
+    "format:check": "prettier --check src",
+    "cleanup:orphaned": "ts-node scripts/cleanup-orphaned-quiz-data.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

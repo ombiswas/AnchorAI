@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 import { DocumentModel } from '../models/document.model';
 import { ITopicResult, QuizAttemptModel } from '../models/quizAttempt.model';
 import { ITopicMastery, TopicMasteryModel } from '../models/topicMastery.model';
-import { calculateRollingMastery } from '../utils/masteryCalculator';
+import { AttemptRecord, DEFAULT_ROLLING_WINDOW } from '../utils/masteryCalculator';
 
 export interface WeakTopicResponse {
   topicTag: string;
@@ -44,43 +44,106 @@ export interface DashboardData {
 
 export class AnalyticsService {
   /**
-   * Incrementally updates TopicMastery records for each topic in a quiz attempt.
-   * Maintains rolling accuracy over the last 5 attempts using the pure calculator.
+   * Re-derives rolling accuracy for a given topic ENTIRELY from all existing QuizAttempts
+   * in the database for that user/topicTag.
+   *
+   * Architectural Decisions Explained:
+   * 1. Single Source of Truth: Recomputes mastery from scratch based on actual historical
+   *    QuizAttempt records rather than incremental mutations. This prevents state drift,
+   *    makes testing deterministic, and handles retrospective quiz/document deletions cleanly.
+   * 2. Pure Derivation with Windowing: Collects all attempts containing this topic tag in
+   *    chronological order, selects the latest window (last 5 attempts), and calculates
+   *    the exact rolling accuracy percentage: Math.round((totalCorrect / totalQuestionsSeen) * 100).
+   * 3. Cascade Pruning: If zero attempts exist for this topic (e.g. after orphaned quiz deletion),
+   *    any existing TopicMastery record is pruned from the database so ghost topics do not linger.
+   * 4. Single Mutation Point: This is the ONLY place where TopicMastery records are written.
+   *
+   * @param userId - The user ID owning the topic mastery
+   * @param topicTag - The conceptual topic tag to re-evaluate
+   * @returns Updated ITopicMastery document, or null if pruned/no attempts found
+   */
+  public async recalculateTopicMastery(
+    userId: string,
+    topicTag: string
+  ): Promise<ITopicMastery | null> {
+    const cleanTag = topicTag.trim();
+    if (!cleanTag) return null;
+
+    const userObjectId = new Types.ObjectId(userId);
+
+    // 1. Fetch all quiz attempts containing this topic tag for this user in chronological order
+    const attempts = await QuizAttemptModel.find({
+      userId: userObjectId,
+      'perTopicResult.topicTag': cleanTag,
+    })
+      .sort({ attemptedAt: 1 })
+      .select('perTopicResult attemptedAt')
+      .exec();
+
+    // 2. Extract chronological attempt records specifically for this topic
+    const topicAttempts: AttemptRecord[] = [];
+    for (const att of attempts) {
+      const topicResult = att.perTopicResult.find(
+        (t) => t.topicTag.trim().toLowerCase() === cleanTag.toLowerCase()
+      );
+      if (topicResult && topicResult.totalQuestions > 0) {
+        topicAttempts.push({
+          totalQuestions: topicResult.totalQuestions,
+          correctCount: Math.min(topicResult.correctCount, topicResult.totalQuestions),
+          attemptedAt: att.attemptedAt,
+        });
+      }
+    }
+
+    // 3. If no attempts exist, remove any orphaned TopicMastery record so it won't display in analytics
+    if (topicAttempts.length === 0) {
+      await TopicMasteryModel.deleteOne({
+        userId: userObjectId,
+        topicTag: cleanTag,
+      }).exec();
+      return null;
+    }
+
+    // 4. Derive rolling window (last DEFAULT_ROLLING_WINDOW attempts, default 5)
+    const windowSize = DEFAULT_ROLLING_WINDOW;
+    const recentAttempts =
+      topicAttempts.length > windowSize
+        ? topicAttempts.slice(topicAttempts.length - windowSize)
+        : topicAttempts;
+
+    const totalQuestionsSeen = recentAttempts.reduce((sum, a) => sum + a.totalQuestions, 0);
+    const totalCorrect = recentAttempts.reduce((sum, a) => sum + a.correctCount, 0);
+    const rollingAccuracy =
+      totalQuestionsSeen > 0 ? Math.round((totalCorrect / totalQuestionsSeen) * 100) : 0;
+    const lastAttemptedAt = topicAttempts[topicAttempts.length - 1].attemptedAt;
+
+    // 5. Persist the recomputed mastery record atomically
+    const updatedMastery = await TopicMasteryModel.findOneAndUpdate(
+      { userId: userObjectId, topicTag: cleanTag },
+      {
+        $set: {
+          rollingAccuracy,
+          recentAttempts,
+          totalAttemptsCount: topicAttempts.length,
+          lastAttemptedAt,
+        },
+      },
+      { upsert: true, returnDocument: 'after' }
+    ).exec();
+
+    return updatedMastery;
+  }
+
+  /**
+   * Updates TopicMastery records for each topic in a quiz attempt by delegating to recalculateTopicMastery.
    */
   public async recordAttemptMastery(userId: string, perTopicResult: ITopicResult[]): Promise<void> {
     if (!perTopicResult || perTopicResult.length === 0) return;
 
-    const userObjectId = new Types.ObjectId(userId);
-
     for (const topic of perTopicResult) {
-      const cleanTag = topic.topicTag.trim();
-      if (!cleanTag) continue;
-
-      const existingMastery = await TopicMasteryModel.findOne({
-        userId: userObjectId,
-        topicTag: cleanTag,
-      }).exec();
-
-      const calculation = calculateRollingMastery(existingMastery?.recentAttempts || [], {
-        totalQuestions: topic.totalQuestions,
-        correctCount: topic.correctCount,
-        attemptedAt: new Date(),
-      });
-
-      await TopicMasteryModel.findOneAndUpdate(
-        { userId: userObjectId, topicTag: cleanTag },
-        {
-          $set: {
-            rollingAccuracy: calculation.rollingAccuracy,
-            recentAttempts: calculation.updatedRecentAttempts,
-            lastAttemptedAt: new Date(),
-          },
-          $inc: {
-            totalAttemptsCount: 1,
-          },
-        },
-        { upsert: true, new: true }
-      ).exec();
+      if (topic.topicTag) {
+        await this.recalculateTopicMastery(userId, topic.topicTag);
+      }
     }
   }
 
@@ -207,3 +270,8 @@ export class AnalyticsService {
 }
 
 export const analyticsService = new AnalyticsService();
+
+export const recalculateTopicMastery = (
+  userId: string,
+  topicTag: string
+) => analyticsService.recalculateTopicMastery(userId, topicTag);
