@@ -8,15 +8,15 @@ import { llmService } from './llm.service';
 
 export type ChatResponseMode = 'grounded' | 'general';
 
+export const NOT_IN_NOTES_SENTINEL = '[[NOT_IN_NOTES]]';
+
 /**
- * Cosine similarity threshold to determine whether any retrieved chunk provides
- * sufficient topical grounding for strict RAG answering.
+ * Pre-retrieval similarity threshold used purely as a latency and cost optimization shortcut.
+ * If the top chunk score falls below this value, the server bypasses the grounded LLM call
+ * and transitions directly to general-knowledge fallback (or refusal).
  *
- * Rationale:
- * With OpenAI 'text-embedding-3-small' (or normalized embeddings), relevant semantic matches
- * typically score between 0.38 and 0.85+. Tangential or out-of-domain queries typically drop
- * below 0.30. Setting this threshold at 0.35 reliably distinguishes queries that have at least
- * partial grounding in the student's notes from questions requiring external knowledge.
+ * Note: This threshold does NOT guarantee the presence or absence of an answer in the excerpts.
+ * The grounded LLM itself serves as the correctness gate via NOT_IN_NOTES_SENTINEL.
  */
 export const RAG_SIMILARITY_CONFIDENCE_THRESHOLD = 0.35;
 
@@ -29,10 +29,10 @@ Your task is to answer the student's question strictly and exclusively based on 
 
 Strict Grounding Rules:
 1. Answer ONLY from the provided context. Do NOT use outside knowledge, speculations, or general assumptions.
-2. If the answer cannot be found in or directly inferred from the provided context, you MUST state exactly: "I don't know based on your notes."
+2. If the answer is not explicitly stated in the provided context, you MUST respond with ONLY the token ${NOT_IN_NOTES_SENTINEL} and absolutely nothing else (no headings, no explanation, no apology).
 3. Cite page numbers or source references whenever citing specific claims or formulas.
 
-Formatting & Structural Standards:
+Formatting & Structural Standards (apply ONLY when the answer IS in the excerpts):
 - Organize your answer with clear Markdown headings (e.g. "### Summary", "### Key Concepts", "### Mechanisms", "### Comparison").
 - Maintain generous, clean paragraph spacing with blank lines between logical sections.
 - Highlight key terminology and definitions with **bold text**, and use inline code or code blocks for formulas, syntax, or commands.
@@ -133,7 +133,7 @@ export class RagService {
       topChunks.length > 0 && maxScore >= RAG_SIMILARITY_CONFIDENCE_THRESHOLD;
 
     console.log(
-      `[rag] Retrieved ${topChunks.length} chunks for doc ${documentId} in ${retrievalMs}ms (max similarity: ${maxScore.toFixed(3)})`
+      `[rag] Retrieved ${topChunks.length} chunks for doc ${documentId} in ${retrievalMs}ms | Top Score: ${maxScore.toFixed(3)} (threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD})`
     );
 
     let answer = '';
@@ -141,14 +141,8 @@ export class RagService {
     let sources: CitedSource[] = [];
     const llmStart = Date.now();
 
-    // 4. Branch strictly between grounded RAG and general-knowledge fallback
+    // 4. Two-stage decision: threshold shortcut, then grounded LLM with sentinel inspection
     if (hasGroundedContext) {
-      // MODE: GROUNDED — At least one chunk cleared the similarity confidence threshold
-      mode = 'grounded';
-      console.log(
-        `[chat] Response mode: GROUNDED (topScore: ${maxScore.toFixed(3)} >= threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
-      );
-
       const contextBlocks = topChunks
         .map(
           (item, idx) =>
@@ -156,44 +150,60 @@ export class RagService {
         )
         .join('\n\n---\n\n');
 
-      const userPrompt = `Document Excerpts:\n${contextBlocks}\n\nStudent Question:\n${question}\n\nFormatting Guidelines: Structure your answer using clear Markdown headings (###), clean paragraph spacing, bullet points, bold key terms, and Markdown tables if comparing concepts or attributes.`;
+      const userPrompt = `Document Excerpts:\n${contextBlocks}\n\nStudent Question:\n${question}`;
 
-      answer = await llmService.generateCompletion({
+      const rawAnswer = await llmService.generateCompletion({
         systemPrompt: STRICT_RAG_SYSTEM_PROMPT,
         userPrompt,
         temperature: 0.1, // low temperature for maximum grounding and factual adherence
       });
 
-      sources = topChunks.map((c) => ({
-        chunkIndex: c.chunk.metadata.chunkIndex,
-        page: c.chunk.metadata.page,
-        textSnippet: c.chunk.text.slice(0, 180) + (c.chunk.text.length > 180 ? '...' : ''),
-        similarityScore: Math.round(c.score * 1000) / 1000,
-      }));
+      const trimmedAnswer = rawAnswer.trim();
+      const isSentinelRefusal =
+        trimmedAnswer.includes(NOT_IN_NOTES_SENTINEL) ||
+        trimmedAnswer.replace(/[`*_\s]/g, '') === NOT_IN_NOTES_SENTINEL.replace(/[`*_\s]/g, '');
+
+      if (isSentinelRefusal) {
+        if (allowFallback) {
+          mode = 'general';
+          console.log(
+            `[chat] Triggered fallback mode: llm_not_in_notes (grounded LLM returned sentinel) for doc ${documentId}`
+          );
+          answer = await this.executeGeneralKnowledgeFallback(doc, question);
+          sources = [];
+        } else {
+          mode = 'grounded';
+          console.log(
+            `[chat] Grounded refusal: llm_not_in_notes (fallback disabled by user) for doc ${documentId}`
+          );
+          answer = "I don't know based on your notes.";
+          sources = [];
+        }
+      } else {
+        mode = 'grounded';
+        answer = rawAnswer;
+        sources = topChunks.map((c) => ({
+          chunkIndex: c.chunk.metadata.chunkIndex,
+          page: c.chunk.metadata.page,
+          textSnippet: c.chunk.text.slice(0, 180) + (c.chunk.text.length > 180 ? '...' : ''),
+          similarityScore: Math.round(c.score * 1000) / 1000,
+        }));
+      }
     } else if (allowFallback) {
-      // MODE: GENERAL FALLBACK — None cleared the threshold, but fallback is enabled
+      // Below threshold: cost optimization shortcut straight to fallback
       mode = 'general';
       console.log(
-        `[chat] Response mode: GENERAL (fallback triggered, topScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
+        `[chat] Triggered fallback mode: below_threshold (maxScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
       );
-
-      const userPrompt = `Current Document: "${doc.title}" (Subject: ${doc.subject || 'General'})\nStudent Question: ${question}\n\nFormatting Guidelines: Explain this concept clearly. Structure your response using clear Markdown headings (###), clean paragraph spacing, bullet points, bold key terms, and Markdown tables if comparing concepts, features, or trade-offs.`;
-
-      answer = await llmService.generateCompletion({
-        systemPrompt: GENERAL_KNOWLEDGE_SYSTEM_PROMPT,
-        userPrompt,
-        temperature: 0.4, // slightly higher temperature for helpful academic tutoring
-      });
-
-      // No fake sources or citations are returned in general-knowledge mode
+      answer = await this.executeGeneralKnowledgeFallback(doc, question);
       sources = [];
     } else {
-      // Strict mode with no fallback permitted: state inability based on notes
+      // Below threshold and fallback disabled by user
       mode = 'grounded';
       console.log(
-        `[chat] Response mode: GROUNDED (fallback disabled by user, topScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
+        `[chat] Grounded refusal: below_threshold (fallback disabled by user, maxScore: ${maxScore.toFixed(3)} < threshold: ${RAG_SIMILARITY_CONFIDENCE_THRESHOLD}) for doc ${documentId}`
       );
-      answer = "I don't know based on your notes. No relevant content was found in this document.";
+      answer = "I don't know based on your notes.";
       sources = [];
     }
 
@@ -216,6 +226,22 @@ export class RagService {
         totalMs,
       },
     };
+  }
+
+  /**
+   * Generates a general-knowledge academic explanation when notes do not contain the answer.
+   */
+  private async executeGeneralKnowledgeFallback(
+    doc: { title: string; subject?: string },
+    question: string
+  ): Promise<string> {
+    const userPrompt = `Current Document: "${doc.title}" (Subject: ${doc.subject || 'General'})\nStudent Question: ${question}\n\nFormatting Guidelines: Explain this concept clearly. Structure your response using clear Markdown headings (###), clean paragraph spacing, bullet points, bold key terms, and Markdown tables if comparing concepts, features, or trade-offs.`;
+
+    return llmService.generateCompletion({
+      systemPrompt: GENERAL_KNOWLEDGE_SYSTEM_PROMPT,
+      userPrompt,
+      temperature: 0.4, // slightly higher temperature for helpful academic tutoring
+    });
   }
 
   /**
@@ -255,14 +281,20 @@ export class RagService {
       ]).exec();
 
       if (atlasResults && atlasResults.length > 0) {
-        return atlasResults.map((item) => ({
-          chunk: item as IChunk,
-          score: item.score || 0,
-        }));
+        return atlasResults.map((item) => {
+          // Atlas with "similarity": "cosine" returns score = (1 + cosine) / 2 in [0, 1].
+          // Normalize back to raw cosine in [-1, 1] to match in-memory cosineSimilarity.
+          const rawCosine = Math.max(-1, Math.min(1, 2 * (item.score || 0) - 1));
+          return {
+            chunk: item as IChunk,
+            score: rawCosine,
+          };
+        });
       }
-    } catch {
-      // Atlas Vector Search is not active on local standalone MongoDB or index is building
-      // Fallback gracefully to in-memory cosine similarity
+    } catch (err) {
+      console.warn(
+        `[rag] Atlas Vector Search failed (${(err as Error).message}), falling back to in-memory cosine search.`
+      );
     }
 
     // In-memory fallback for local dev: fetch all document chunks and rank by cosine similarity

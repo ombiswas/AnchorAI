@@ -114,10 +114,6 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
     }
   };
 
-  const isUnknownAnswer = (text: string) => {
-    return text.toLowerCase().includes("i don't know based on your notes");
-  };
-
   return (
     <div className="flex flex-1 h-full min-h-0 flex-col rounded-xl border border-zinc-200/90 bg-white shadow-xs overflow-hidden">
       {/* Chat Scoped Header */}
@@ -459,8 +455,8 @@ export const DocumentChat: React.FC<DocumentChatProps> = ({
                       </div>
                     )}
 
-                    {/* No Context Alert for strict answers */}
-                    {!isGeneralMode && isUnknownAnswer(msg.text) && (
+                    {/* No Context Alert for strict refusal answers */}
+                    {msg.mode === 'grounded' && (!msg.sources || msg.sources.length === 0) && (
                       <div className="mt-3.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700">
                         <span className="font-semibold text-zinc-950">Notice:</span> The retrieved excerpts from
                         this document did not contain enough verified information to answer this question.
